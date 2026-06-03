@@ -1,4 +1,4 @@
-name: Renew
+name: host2play
 
 on:
   schedule:
