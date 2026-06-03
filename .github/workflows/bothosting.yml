@@ -1,0 +1,28 @@
+name: bot-hosting earn Coin
+
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  login:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/bot-hosting
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          DISCORD_EMAIL: ${{ secrets.BOTHOSTING_DISCORD_EMAIL }}
+          DISCORD_PASSWORD: ${{ secrets.BOTHOSTING_DISCORD_PASSWORD }}
+          SOCKS5_PROXY: ${{ secrets.BOTHOSTING_SOCKS5_PROXY }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
