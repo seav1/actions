@@ -11,13 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.BOTHOSTING_REPO }}
+          repository: seav1/bothosting
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
       - run: bash run.sh
         env:
-          DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
+          DISCORD_EMAIL: ${{ secrets.SCORD_EMAIL }}
           DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
           SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
 
