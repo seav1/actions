@@ -1,0 +1,29 @@
+name: hnhost Login
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  login:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/hnhost
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
+          DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
+          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
+          HNHOST_SERVER_IDS: ${{ secrets.HNHOST_SERVER_IDS }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
