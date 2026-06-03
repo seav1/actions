@@ -1,0 +1,32 @@
+name: Zampto Auto Renew
+
+on:
+  schedule:
+    - cron: '0 0/8 * * *'
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/zampto
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          HY2_LINK: ${{ secrets.HY2_LINK_ZAMPTO }}
+          LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL_ZAMPTO }}
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD_ZAMPTO }}
+          SERVER_ID: "3335"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zampto-debug-logs
+          path: |
+            *.png
+            *.txt
+          retention-days: 3
