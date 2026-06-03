@@ -13,7 +13,7 @@ jobs:
         env:
           REPO_PAT: ${{ secrets.REPO_PAT }}
         run: |
-          git clone https://x-access-token:${REPO_PAT}@github.com/seav1/host2play-private.git private
+          git clone https://x-access-token:${REPO_PAT}@github.com/seav1/host2play.git private
           cd private
           chmod +x run.sh
           ./run.sh
