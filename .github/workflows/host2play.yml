@@ -1,4 +1,4 @@
-name: host2play
+name: Host2Play Auto Renew
 
 on:
   schedule:
@@ -6,14 +6,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  run:
+  renew_bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone private repo and run
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/host2play
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
         env:
-          REPO_PAT: ${{ secrets.REPO_PAT }}
-        run: |
-          git clone https://x-access-token:${REPO_PAT}@github.com/seav1/host2play.git private
-          cd private
-          chmod +x run.sh
-          ./run.sh
+          VLESS_LINK: ${{ secrets.VLESS_LINK }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          retention-days: 1
+          path: "*.png"
