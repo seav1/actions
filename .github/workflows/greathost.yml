@@ -1,0 +1,32 @@
+name: GreatHost Auto Renew
+
+on:
+  schedule:
+    - cron: '13 22 * * *'
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/greathost
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - uses: alphaxcv/warp-on-actions@1.0
+        with:
+          stack: dual
+          mode: wireguard
+
+      - run: bash run.sh
+        env:
+          EMAIL: ${{ secrets.GREATHOST_EMAIL }}
+          PASSWORD: ${{ secrets.GREATHOST_PASSWORD }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warp-debug-screenshots
+          path: "*.png"
