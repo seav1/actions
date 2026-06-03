@@ -1,0 +1,32 @@
+name: Katabump Auto Renew
+
+on:
+  schedule:
+    - cron: '11 17 */2 * *'
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/katabump
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - uses: alphaxcv/warp-on-actions@1.0
+        with:
+          stack: dual
+          mode: wireguard
+
+      - run: bash run.sh
+        env:
+          LOGIN_EMAIL: ${{ secrets.KATABUMP_LOGIN_EMAIL }}
+          LOGIN_PASSWORD: ${{ secrets.KATABUMP_LOGIN_PASSWORD }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: "*.png"
