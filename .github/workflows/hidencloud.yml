@@ -1,0 +1,33 @@
+name: HidenCloud Auto Renew
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/hidencloud
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - uses: fscarmen/warp-on-actions@v1.4
+        with:
+          stack: dual
+          mode: wireguard
+
+      - run: bash run.sh
+        env:
+          USERNAME: ${{ secrets.HIDENCLOUD_USERNAME }}
+          PASSWORD: ${{ secrets.HIDENCLOUD_PASSWORD }}
+          SERVICE_ID: ${{ secrets.HIDENCLOUD_SERVICE_ID }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hidencloud-debug-screenshots
+          path: "*.png"
