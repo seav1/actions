@@ -25,7 +25,7 @@ jobs:
           EMAIL: ${{ secrets.GREATHOST_EMAIL }}
           PASSWORD: ${{ secrets.GREATHOST_PASSWORD }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: warp-debug-screenshots
