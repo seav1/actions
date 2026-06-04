@@ -22,8 +22,8 @@ jobs:
 
       - run: bash run.sh
         env:
-          LOGIN_EMAIL: ${{ secrets.KATABUMP_LOGIN_EMAIL }}
-          LOGIN_PASSWORD: ${{ secrets.KATABUMP_LOGIN_PASSWORD }}
+          KATABUMP_LOGIN_EMAIL: ${{ secrets.KATABUMP_LOGIN_EMAIL }}
+          KATABUMP_LOGIN_PASSWORD: ${{ secrets.KATABUMP_LOGIN_PASSWORD }}
 
       - if: always()
         uses: actions/upload-artifact@v4
