@@ -31,8 +31,19 @@ jobs:
                 });
                 if (runs.workflow_runs.length === 0) break;
                 for (const run of runs.workflow_runs) {
-                  await github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id });
-                  console.log(`Deleted run ${run.id} from "${workflow.name}"`);
+                  // 如果还在运行，先取消
+                  if (['in_progress', 'queued', 'waiting', 'requested'].includes(run.status)) {
+                    await github.rest.actions.cancelWorkflowRun({ owner, repo, run_id: run.id });
+                    console.log(`Cancelled run ${run.id}`);
+                    // 等待取消生效
+                    await new Promise(r => setTimeout(r, 3000));
+                  }
+                  try {
+                    await github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id });
+                    console.log(`Deleted run ${run.id} from "${workflow.name}"`);
+                  } catch (e) {
+                    console.log(`Skip run ${run.id}: ${e.message}`);
+                  }
                 }
                 page++;
               }
