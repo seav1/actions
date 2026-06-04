@@ -1,0 +1,32 @@
+name: LUNES Login
+
+on:
+  schedule:
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  login_flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/lunes
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - uses: alphaxcv/warp-on-actions@1.0
+        with:
+          stack: dual
+          mode: wireguard
+
+      - run: bash run.sh
+        env:
+          LUNES_EMAIL: ${{ secrets.LUNES_EMAIL }}
+          LUNES_PASSWORD: ${{ secrets.LUNES_PASSWORD }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warp-debug-screenshots
+          path: "*.png"
