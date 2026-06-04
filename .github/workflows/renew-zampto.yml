@@ -22,7 +22,7 @@ jobs:
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD_ZAMPTO }}
           SERVER_ID: "3335"
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: zampto-debug-logs
