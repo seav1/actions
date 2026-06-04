@@ -3,48 +3,17 @@ name: Clear Actions Run History
 on:
   workflow_dispatch:
 
-permissions:
-  actions: write
-
 jobs:
   clear:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
     steps:
-      - name: Delete all workflow runs
-        uses: actions/github-script@v7
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            const { data: workflows } = await github.rest.actions.listRepoWorkflows({ owner, repo });
-
-            for (const workflow of workflows.workflows) {
-              let page = 1;
-              while (true) {
-                const { data: runs } = await github.rest.actions.listWorkflowRuns({
-                  owner, repo,
-                  workflow_id: workflow.id,
-                  per_page: 100,
-                  page,
-                });
-                if (runs.workflow_runs.length === 0) break;
-                for (const run of runs.workflow_runs) {
-                  // 如果还在运行，先取消
-                  if (['in_progress', 'queued', 'waiting', 'requested'].includes(run.status)) {
-                    await github.rest.actions.cancelWorkflowRun({ owner, repo, run_id: run.id });
-                    console.log(`Cancelled run ${run.id}`);
-                    // 等待取消生效
-                    await new Promise(r => setTimeout(r, 3000));
-                  }
-                  try {
-                    await github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id });
-                    console.log(`Deleted run ${run.id} from "${workflow.name}"`);
-                  } catch (e) {
-                    console.log(`Skip run ${run.id}: ${e.message}`);
-                  }
-                }
-                page++;
-              }
-            }
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 0
