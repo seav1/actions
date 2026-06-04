@@ -25,7 +25,7 @@ jobs:
           LUNES_EMAIL: ${{ secrets.LUNES_EMAIL }}
           LUNES_PASSWORD: ${{ secrets.LUNES_PASSWORD }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: warp-debug-screenshots
