@@ -3,6 +3,9 @@ name: Clear Actions Run History
 on:
   workflow_dispatch:
 
+permissions:
+  actions: write
+
 jobs:
   clear:
     runs-on: ubuntu-latest
