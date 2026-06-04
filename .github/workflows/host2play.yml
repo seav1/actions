@@ -19,7 +19,7 @@ jobs:
         env:
           VLESS_LINK: ${{ secrets.VLESS_LINK }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: debug-screenshots
