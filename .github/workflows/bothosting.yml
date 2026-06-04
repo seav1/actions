@@ -21,7 +21,7 @@ jobs:
           DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
           SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
