@@ -1,4 +1,4 @@
-name: hnhost Login
+name: Hnhost Login
 
 on:
   workflow_dispatch:
