@@ -26,7 +26,7 @@ jobs:
           PASSWORD: ${{ secrets.HIDENCLOUD_PASSWORD }}
           SERVICE_ID: ${{ secrets.HIDENCLOUD_SERVICE_ID }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: hidencloud-debug-screenshots
