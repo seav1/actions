@@ -22,7 +22,7 @@ jobs:
           SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
           HNHOST_SERVER_IDS: ${{ secrets.HNHOST_SERVER_IDS }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
