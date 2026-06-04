@@ -25,7 +25,7 @@ jobs:
           KATABUMP_LOGIN_EMAIL: ${{ secrets.KATABUMP_LOGIN_EMAIL }}
           KATABUMP_LOGIN_PASSWORD: ${{ secrets.KATABUMP_LOGIN_PASSWORD }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: debug-screenshots
