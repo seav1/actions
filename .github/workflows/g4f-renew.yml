@@ -1,0 +1,36 @@
+name: G4F Auto Renew
+
+on:
+  schedule:
+    - cron: '15 */1 * * *' # 每 1 小时 15 分运行一次
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          repository: sea1/gaming4free
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - name: Set up WARP (Bypass CF Blocks)
+        uses: alphaxcv/warp-on-actions@1.0
+        with:
+          stack: dual
+          mode: wireguard
+          
+      - name: Execute Run Script
+        run: bash run.sh
+        env:
+          SERVER_NAMES: ${{ secrets.SERVER_NAMES }} 
+
+      - name: Upload Debug Screenshot (Only on Failure)
+        if: failure() 
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: "*.png"
