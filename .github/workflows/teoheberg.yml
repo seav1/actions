@@ -21,7 +21,7 @@ jobs:
           TEO_EMAIL: ${{ secrets.TEO_EMAIL }}
           TEO_PASSWORD: ${{ secrets.TEO_PASSWORD }}
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: debug-screenshots
