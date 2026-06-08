@@ -1,0 +1,29 @@
+name: TeoHeberg Auto Renew
+
+on:
+  schedule:
+    - cron: '3 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  renew_bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/teoheberg
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          VLESS_LINK: ${{ secrets.VLESS_LINK }}
+          TEO_EMAIL: ${{ secrets.TEO_EMAIL }}
+          TEO_PASSWORD: ${{ secrets.TEO_PASSWORD }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          retention-days: 1
+          path: "*.png"
