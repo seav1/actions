@@ -13,7 +13,7 @@ jobs:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: sea1/gaming4free
+          repository: seav1/gaming4free
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
