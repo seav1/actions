@@ -2,18 +2,18 @@ name: G4F Auto Renew
 
 on:
   schedule:
-    - cron: '15 */1 * * *' # 每 1 小时 15 分运行一次
+    # 每天北京时间 11:15 运行一次 (UTC 03:15)
+    - cron: '15 3 * * *' 
   workflow_dispatch: # 允许手动触发
 
 jobs:
   renew:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout private repository
         uses: actions/checkout@v4
         with:
-          repository: seav1/gaming4free
+          repository: your_username/your_private_repo
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
@@ -29,7 +29,7 @@ jobs:
           SERVER_NAMES: ${{ secrets.SERVER_NAMES }} 
 
       - name: Upload Debug Screenshot (Only on Failure)
-        if: failure() 
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: debug-screenshots
