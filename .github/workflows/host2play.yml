@@ -1,8 +1,6 @@
 name: Host2Play Auto Renew
 
 on:
-  schedule:
-    - cron: '3 */6 * * *'
   workflow_dispatch:
 
 jobs:
