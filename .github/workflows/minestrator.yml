@@ -15,7 +15,7 @@ jobs:
 
       - run: bash run.sh
         env:
-          VLESS_LINK: ${{ secrets.VLESS_LINK }}
+          VLESS_LINK: ${{ secrets.VLESS_LINK_ALWAYSDATA }}
           MINESTRATOR_USER: ${{ secrets.MINESTRATOR_USER }}
           MINESTRATOR_PASSWORD: ${{ secrets.MINESTRATOR_PASSWORD }}
 
