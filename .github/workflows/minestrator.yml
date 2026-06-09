@@ -1,0 +1,26 @@
+name: Minestrator Auto Restart
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/minestrator
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          VLESS_LINK: ${{ secrets.VLESS_LINK }}
+          MINESTRATOR_USER: ${{ secrets.MINESTRATOR_USER }}
+          MINESTRATOR_PASSWORD: ${{ secrets.MINESTRATOR_PASSWORD }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
