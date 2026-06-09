@@ -2,7 +2,7 @@ name: G4F Auto Renew
 
 on:
   schedule:
-    - cron: '3 */1 * * *'
+    - cron: '*/50 * * * *'
   workflow_dispatch: # 允许手动触发
 
 jobs:
