@@ -1,6 +1,7 @@
-name: Minestrator Auto Restart
+name: Minestrator Restart
 
 on:
+
   workflow_dispatch:
 
 jobs:
