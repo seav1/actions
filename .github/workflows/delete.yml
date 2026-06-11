@@ -1,6 +1,8 @@
 name: Clear Actions Run History
 
 on:
+  schedule:
+    - cron: '3 22 * * *'
   workflow_dispatch:
 
 jobs:
