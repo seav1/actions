@@ -1,0 +1,27 @@
+name: JustRunMy Reset Timer
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/justrunmy
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          USER_EMAIL: ${{ secrets.JUSTRUNMY_EMAIL }}
+          USER_PASSWORD: ${{ secrets.JUSTRUNMY_PASSWORD }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
