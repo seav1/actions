@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.FALIXNODES_REPO }}
+          repository: seav1/falixnodes
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
