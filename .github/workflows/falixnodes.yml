@@ -1,11 +1,8 @@
 name: FalixNodes Auto Restart
 on:
   workflow_dispatch:
-  repository_dispatch:
-    types: [uptime-kuma-alert]
 jobs:
   restart:
-    if: github.event_name == 'workflow_dispatch' || github.event.client_payload.status == 'down'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
