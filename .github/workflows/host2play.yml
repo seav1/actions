@@ -12,10 +12,13 @@ jobs:
           repository: seav1/host2play
           token: ${{ secrets.REPO_PAT }}
           ref: main
-
+          
+      - uses: alphaxcv/warp-on-actions@1.0
+        with:
+          stack: dual
+          mode: wireguard
+          
       - run: bash run.sh
-        env:
-          VLESS_LINK: ${{ secrets.VLESS_LINK }}
 
       - if: failure()
         uses: actions/upload-artifact@v4
