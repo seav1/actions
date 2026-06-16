@@ -1,0 +1,29 @@
+name: Kerit Cloud Auto Renew
+
+on:
+  schedule:
+    - cron: "23 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.KERIT_REPO }}
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          VLESS_URL: ${{ secrets.VLESS_URL }}
+          KERIT_EMAIL: ${{ secrets.KERIT_EMAIL }}
+          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
+          PROXY: "socks5://127.0.0.1:10808"
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kerit-debug-screenshots
+          path: "*.png"
