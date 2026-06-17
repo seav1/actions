@@ -18,38 +18,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav1/hCaptcha
+          repository: seav1/hcaptcha
           token: ${{ secrets.REPO_PAT }}
           ref: main
-          
+
       - uses: alphaxcv/warp-on-actions@1.0
         with:
           stack: dual
           mode: wireguard
-          
+
       - run: bash run.sh
         env:
           HCAPTCHA_USER: ${{ secrets.HCAPTCHA_USER }}
           HCAPTCHA_PASS: ${{ secrets.HCAPTCHA_PASS }}
-          HEADLESS: "false"
           COOKIE_OUTPUT: hcaptcha_cookie.txt
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harvest-debug
+          path: debug/
+          if-no-files-found: ignore
 
       - name: Commit and push cookie
         run: |
           cd $GITHUB_WORKSPACE
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.REPO_PAT }}@github.com/seav1/hCaptcha
-          git add hcaptcha_cookie.txt
+          git remote set-url origin https://x-access-token:${{ secrets.REPO_PAT }}@github.com/seav1/hcaptcha
+          if [ -f hcaptcha_cookie.txt ]; then
+            git add hcaptcha_cookie.txt
+          fi
           if git diff --cached --quiet; then
             echo "Cookie 无变化，跳过提交。"
           else
-            git commit -m "chore: refresh hCaptcha cookie [skip ci]"
+            git commit -m "chore: refresh hCaptcha accessibility cookie [skip ci]"
             git push
           fi
-
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshots
-          path: "*.png"
