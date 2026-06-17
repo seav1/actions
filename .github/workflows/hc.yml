@@ -39,7 +39,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Cookie 无变化，跳过提交。"
           else
-            git commit -m "chore: refresh hCaptcha accessibility cookie [skip ci]"
+            git commit -m "chore: refresh hCaptcha cookie [skip ci]"
             git push
           fi
 
