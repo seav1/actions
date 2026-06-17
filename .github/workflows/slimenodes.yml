@@ -1,0 +1,31 @@
+name: SlimeNodes Coin Farm
+
+on:
+  schedule:
+    - cron: '13 20 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  farm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/slimenodes
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
+          DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
+          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
+          MAX_ADS: '20'
+          MAX_FAILS: '3'
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          retention-days: 1
+          path: "*.png"
