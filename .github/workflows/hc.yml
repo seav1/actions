@@ -34,7 +34,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.REPO_PAT }}@github.com/${{ secrets.HCAPTCHA_REPO }}
+          git remote set-url origin https://x-access-token:${{ secrets.REPO_PAT }}@github.com/seav1/hCaptcha
           git add hcaptcha_cookie.txt
           if git diff --cached --quiet; then
             echo "Cookie 无变化，跳过提交。"
