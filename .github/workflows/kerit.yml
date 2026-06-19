@@ -14,7 +14,12 @@ jobs:
           repository: seav1/kerit
           token: ${{ secrets.REPO_PAT }}
           ref: main
-
+          
+      - uses: alphaxcv/warp-on-actions@1.0
+        with:
+          stack: dual
+          mode: wireguard
+          
       - run: bash run.sh
         env:
           VLESS_URL: ${{ secrets.VLESS_URL }}
