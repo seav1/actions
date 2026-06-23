@@ -23,7 +23,7 @@ jobs:
 
       - run: bash run.sh
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: debug-screenshots
