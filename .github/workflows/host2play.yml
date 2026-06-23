@@ -1,28 +1,31 @@
-name: Host2Play Auto Renew
+name: Host2Play Auto Renew v2
 
 on:
   workflow_dispatch:
 
 jobs:
   renew_bot:
+    name: 执行续期脚本
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
           repository: seav1/host2play
           token: ${{ secrets.REPO_PAT }}
           ref: main
-          
+          fetch-depth: 0
+
       - uses: alphaxcv/warp-on-actions@1.0
         with:
           stack: dual
           mode: wireguard
-          
+
       - run: bash run.sh
 
-      - if: failure()
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: debug-screenshots
           retention-days: 1
-          path: "*.png"
+          path: output/screenshots/*.png
