@@ -1,4 +1,4 @@
-name: Host2Play Auto Renew
+name: Host2Play Auto Renew 1
 
 on:
   schedule:
