@@ -1,0 +1,30 @@
+name: ByteNut Auto Renew
+
+on:
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/bytenut
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - uses: alphaxcv/warp-on-actions@1.0
+        with:
+          stack: dual
+          mode: wireguard
+
+      - run: bash run.sh
+        env:
+          BYTENUT_USERNAME: ${{ secrets.BYTENUT_USERNAME }}
+          BYTENUT_PASSWORD: ${{ secrets.BYTENUT_PASSWORD }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
