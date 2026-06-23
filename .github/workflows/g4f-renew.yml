@@ -14,11 +14,10 @@ jobs:
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
-      - name: Set up WARP (Bypass CF Blocks)
-        uses: alphaxcv/warp-on-actions@1.0
+      - name: Set up WARP
+        uses: alphaxcv/warp@1.0
         with:
           stack: dual
-          mode: wireguard
           
       - name: Execute Run Script
         run: bash run.sh
