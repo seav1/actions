@@ -15,10 +15,9 @@ jobs:
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
-      - uses: alphaxcv/warp-on-actions@1.0
+      - uses: alphaxcv/warp@1.0
         with:
           stack: dual
-          mode: wireguard
 
       - run: bash run.sh
         env:
