@@ -14,7 +14,7 @@ jobs:
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
-      - uses: alphaxcv/warpx@1.0
+      - uses: alphaxcv/warp@1.0
           
       - name: Execute Run Script
         run: bash run.sh
