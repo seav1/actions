@@ -22,11 +22,8 @@ jobs:
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
-      - uses: alphaxcv/warp-on-actions@1.0
-        with:
-          stack: dual
-          mode: wireguard
-          
+      - uses: alphaxcv/warpx@1.0
+      
       - run: bash run.sh
         env:
           HCAPTCHA_USER: ${{ secrets.HCAPTCHA_USER }}
