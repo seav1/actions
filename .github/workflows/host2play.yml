@@ -19,8 +19,6 @@ jobs:
           fetch-depth: 0
 
       - uses: alphaxcv/warpx@1.0
-        with:
-          stack: dual
 
       - run: bash run.sh
 
