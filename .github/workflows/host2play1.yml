@@ -17,8 +17,16 @@ jobs:
           token: ${{ secrets.REPO_PAT }}
           ref: main
           fetch-depth: 0
+          
+      - name: 替换 APT 源为公共源（连 Warp 前执行）
+        shell: bash
+        run: |
+          sudo sed -i 's|mirror+file:/etc/apt/apt-mirrors.txt|http://archive.ubuntu.com/ubuntu|g' \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+          echo "http://archive.ubuntu.com/ubuntu/" | sudo tee /etc/apt/apt-mirrors.txt
+          sudo apt-get update
 
-      - uses: alphaxcv/warp@1.0
+      - uses: alphaxcv/warpx@1.0
 
       - run: bash run.sh
 
