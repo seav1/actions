@@ -1,0 +1,33 @@
+name: Latvi Linkvertise Earn
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: latvi-linkvertise-earn
+  cancel-in-progress: false
+
+jobs:
+  earn-credits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav/latvi
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - uses: alphaxcv/warpx@1.0
+
+      - run: bash run.sh
+        env:
+          LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
+          LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshots
+          path: screenshots/
+          if-no-files-found: ignore
