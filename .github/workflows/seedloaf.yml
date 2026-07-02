@@ -1,6 +1,8 @@
 name: Seedloaf World Keeper
 
 on:
+  schedule:
+    - cron: '17 2 * * *'
   workflow_dispatch:
 
 concurrency:
