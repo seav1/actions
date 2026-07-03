@@ -19,14 +19,14 @@ jobs:
       - name: 📂 复制脚本到工作目录
         run: cp private/latvi.js latvi.js
 
-      - uses: alphaxcv/warp@1.0
-
       - name: 📦 安装依赖
         run: |
           cd private
           npm install https-proxy-agent 2>/dev/null || true
           cp -r node_modules ../node_modules 2>/dev/null || true
 
+      - uses: alphaxcv/warp@1.0
+      
       - name: 🔧 执行领取任务
         env:
           # 多账号直接在 LATVI_ACCOUNT 中换行写入，格式：账号名,email,password
