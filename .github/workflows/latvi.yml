@@ -1,33 +1,52 @@
-name: Latvi Linkvertise Earn
+name: Latvi-Coins
 
 on:
   workflow_dispatch:
 
-concurrency:
-  group: latvi-linkvertise-earn
-  cancel-in-progress: false
-
 jobs:
-  earn-credits:
+  earn:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 拉取私库脚本
+        uses: actions/checkout@v4
         with:
-          repository: seav1/latvi
+          repository: ${{ github.repository_owner }}/latvi
           token: ${{ secrets.REPO_PAT }}
-          ref: main
+          path: private
+
+      - name: 📂 复制脚本到工作目录
+        run: cp private/latvi.js latvi.js
 
       - uses: alphaxcv/warp@1.0
 
-      - run: bash run.sh
-        env:
-          LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
-          LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
-          DISPLAY: ":99"
+      - name: 📦 安装依赖
+        run: |
+          cd private
+          npm install https-proxy-agent 2>/dev/null || true
+          cp -r node_modules ../node_modules 2>/dev/null || true
 
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: failure-screenshots
-          path: screenshots/**/*.png
-          if-no-files-found: ignore
+      - name: 🔧 执行领取任务
+        env:
+          # 多账号直接在 LATVI_ACCOUNT 中换行写入，格式：账号名,email,password
+          LATVI_ACCOUNT: ${{ secrets.LATVI_ACCOUNT }}
+
+        run: node latvi.js
+
+      - name: 📤 推回私库（如有 Cookie 更新）
+        env:
+          REPO_PAT: ${{ secrets.REPO_PAT }}
+        run: |
+          cp latvi.js private/latvi.js
+          cd private
+          if ! git diff --quiet; then
+            git config user.email "actions@github.com"
+            git config user.name "GitHub Actions"
+            git add latvi.js
+            git commit -m "🔄 自动更新 Cookie"
+            git push "https://${REPO_PAT}@github.com/${{ github.repository_owner }}/latvi.git" HEAD
+            echo "✅ Cookie 已推回私库"
+          else
+            echo "ℹ️ Cookie 无变化，无需推送"
+          fi
