@@ -31,7 +31,6 @@ jobs:
         env:
           # 多账号直接在 LATVI_ACCOUNT 中换行写入，格式：账号名,email,password
           LATVI_ACCOUNT: ${{ secrets.LATVI_ACCOUNT }}
-          TG_BOT:     ${{ secrets.TG_BOT }}
         run: node latvi.js
 
       - name: 📤 推回私库（如有 Cookie 更新）
