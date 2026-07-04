@@ -1,51 +1,33 @@
-name: Latvi-Coins
+name: latvi linkvertise bypass
 
 on:
   workflow_dispatch:
 
 jobs:
-  earn:
+  run-task:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     steps:
-      - name: 📥 拉取私库脚本
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          repository: ${{ github.repository_owner }}/latvi
-          token: ${{ secrets.REPO_PAT }}
-          path: private
+          python-version: '3.10'
 
-      - name: 📂 复制脚本到工作目录
-        run: cp private/latvi.js latvi.js
-
-      - name: 📦 安装依赖
+      - name: Install Dependencies
         run: |
-          cd private
-          npm install https-proxy-agent 2>/dev/null || true
-          cp -r node_modules ../node_modules 2>/dev/null || true
+          sudo apt-get update && sudo apt-get install -y xvfb google-chrome-stable
+          pip install seleniumbase curl_cffi
 
-      - uses: alphaxcv/warp@1.0
-      
-      - name: 🔧 执行领取任务
+      - name: Run Main Script     
         env:
-          # 多账号直接在 LATVI_ACCOUNT 中换行写入，格式：账号名,email,password
-          LATVI_ACCOUNT: ${{ secrets.LATVI_ACCOUNT }}
-        run: node latvi.js
-
-      - name: 📤 推回私库（如有 Cookie 更新）
-        env:
-          REPO_PAT: ${{ secrets.REPO_PAT }}
+          LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
+          LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
         run: |
-          cp latvi.js private/latvi.js
-          cd private
-          if ! git diff --quiet; then
-            git config user.email "actions@github.com"
-            git config user.name "GitHub Actions"
-            git add latvi.js
-            git commit -m "🔄 自动更新 Cookie"
-            git push "https://${REPO_PAT}@github.com/${{ github.repository_owner }}/latvi.git" HEAD
-            echo "✅ Cookie 已推回私库"
-          else
-            echo "ℹ️ Cookie 无变化，无需推送"
-          fi
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24 -ac" python linkvertise_earn.py
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-screenshots
+          path: "*.png"
