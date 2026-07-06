@@ -22,9 +22,8 @@ jobs:
 
       - run: bash run.sh
         env:
-          DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL2 }}
-          DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD2 }}
-          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
+          SEEDLOAF_EMAIL: ${{ secrets.SEEDLOAF_EMAIL }}
+          SEEDLOAF_PASSWORD: ${{ secrets.SEEDLOAF_PASSWORD }}
 
       - if: failure()
         uses: actions/upload-artifact@v4
