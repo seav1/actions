@@ -1,33 +1,29 @@
-name: latvi linkvertise bypass
+name: Ateex Auto Earn
 
 on:
+
   workflow_dispatch:
 
 jobs:
-  run-task:
+  run-bot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          repository: seav1/latvi
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y xvfb google-chrome-stable
-          pip install seleniumbase curl_cffi
+      - uses: alphaxcv/warp@1.0
 
-      - name: Run Main Script     
+      - run: bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
-        run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24 -ac" python linkvertise_earn.py
+          SE_BINARY_PATH: /usr/bin/google-chrome
 
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: runtime-screenshots
+          name: runtime-screenshot
           path: "*.png"
