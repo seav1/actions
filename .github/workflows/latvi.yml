@@ -2,6 +2,7 @@ name: Latvi Auto Earn
 
 on:
   workflow_dispatch:
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -11,6 +12,7 @@ jobs:
           repository: seav1/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
+
       - name: Start sing-box
         run: |
           set -euo pipefail
@@ -71,50 +73,51 @@ jobs:
 
           config = {
               "log": {"level": "info", "timestamp": True},
-              "dns": {
-                  "servers": [
-                      {"tag": "remote", "address": "8.8.8.8", "detour": "proxy-out"},
-                      {"tag": "direct", "address": "223.5.5.5", "detour": "direct-out"},
-                  ],
-                  "rules": [{"outbound": "any", "server": "direct"}],
-              },
               "inbounds": [{
-                  "type": "tun", "tag": "tun-in", "interface_name": "tun0",
-                  "address": ["172.19.0.1/30"], "mtu": 9000,
-                  "auto_route": True, "strict_route": True, "stack": "system", "sniff": True,
+                  "type": "mixed", 
+                  "tag": "mixed-in", 
+                  "listen": "127.0.0.1",
+                  "listen_port": 1080,
+                  "sniff": True
               }],
               "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "block", "tag": "block-out"}],
               "route": {
-                  "auto_detect_interface": True, "final": "proxy-out",
-                  "rules": [{"protocol": "dns", "outbound": "direct-out"}],
-              },
+                  "final": "proxy-out"
+              }
           }
           print(json.dumps(config, indent=2, ensure_ascii=False))
           PYEOF
 
-          # 排除 GitHub Actions 自身流量,避免日志/上传被代理接管卡死
-          for host in api.github.com github.com pipelines.actions.githubusercontent.com results-receiver.actions.githubusercontent.com; do
-            for ip in $(getent ahosts "$host" | awk '{print $1}' | sort -u); do
-              sudo ip route add "$ip/32" dev eth0 table 100 2>/dev/null || true
-              sudo ip rule add to "$ip/32" table 100 priority 50 2>/dev/null || true
-            done
-          done
-
           sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
           echo $! | sudo tee /tmp/singbox.pid > /dev/null
 
-          for i in $(seq 1 15); do
-            ip addr show tun0 &>/dev/null && break
-            sleep 1
+          success=0
+          for i in {1..6}; do
+            if curl -fsS --socks5-hostname 127.0.0.1:1080 --max-time 5 https://ipinfo.io/json; then
+              success=1
+              break
+          fi
+            sleep 2
           done
-          curl -fsS --max-time 10 https://ipinfo.io/json || (echo "代理出口检测失败,查看日志:"; cat /tmp/singbox.log; exit 1)
+
+          if [ $success -ne 1 ]; then
+            echo "代理出口检测失败, 查看日志:"
+            cat /tmp/singbox.log
+            exit 1
+          fi
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
-      - run: bash run.sh
+
+      - name: Run script with proxy
+        run: bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
           SE_BINARY_PATH: /usr/bin/google-chrome
+          HTTP_PROXY: http://127.0.0.1:1080
+          HTTPS_PROXY: http://127.0.0.1:1080
+          ALL_PROXY: socks5h://127.0.0.1:1080
+
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
