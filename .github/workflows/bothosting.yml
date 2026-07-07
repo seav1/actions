@@ -28,8 +28,6 @@ jobs:
         env:
           DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
           DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
-          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
-
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
