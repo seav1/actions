@@ -15,11 +15,19 @@ jobs:
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
+      - name: HY2
+        env:
+          HY2_LINK: ${{ secrets.HY2_LINK_DISCORD }}
+        run: |
+          wget -qO hy2 https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64 && chmod +x hy2
+          printf "server: $HY2_LINK\nsocks5:\n  listen: 127.0.0.1:1080" > c.yaml
+          ./hy2 client -c c.yaml > /dev/null 2>&1 &
+          timeout 30s sh -c 'until nc -z 127.0.0.1 1080; do sleep 1; done' || (echo "time out" && exit 1)
+          
       - run: bash run.sh
         env:
           DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
           DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
-          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
           HNHOST_SERVER_IDS: ${{ secrets.HNHOST_SERVER_IDS }}
 
       - if: failure()
