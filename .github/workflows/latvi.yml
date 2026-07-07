@@ -112,7 +112,6 @@ jobs:
 
       - name: Run script with proxy
         run: |
-          # 1. 确保安装 python socks5 依赖，防止 "Missing dependencies for SOCKS support" 报错
           ALL_PROXY="" pip install pysocks
           # 2. 正常执行你的脚本
           bash run.sh
