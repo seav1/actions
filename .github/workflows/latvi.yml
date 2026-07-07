@@ -88,15 +88,17 @@ jobs:
           print(json.dumps(config, indent=2, ensure_ascii=False))
           PYEOF
 
+          # 启动 sing-box
           sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
           echo $! | sudo tee /tmp/singbox.pid > /dev/null
 
+          # 等待代理就绪并验证 (使用纯 socks5 验证)
           success=0
           for i in {1..6}; do
-            if curl -fsS --socks5-hostname 127.0.0.1:1080 --max-time 5 https://ipinfo.io/json; then
+            if curl -fsS -x socks5://127.0.0.1:1080 --max-time 5 https://ipinfo.io/json; then
               success=1
               break
-          fi
+            fi
             sleep 2
           done
 
@@ -109,11 +111,16 @@ jobs:
           NODE_LINK: ${{ secrets.NODE_LINK }}
 
       - name: Run script with proxy
-        run: bash run.sh
+        run: |
+          # 1. 确保安装 python socks5 依赖，防止 "Missing dependencies for SOCKS support" 报错
+          ALL_PROXY="" pip install pysocks
+          # 2. 正常执行你的脚本
+          bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
           SE_BINARY_PATH: /usr/bin/google-chrome
+          # 统一只提供标准 socks5 环境变量
           ALL_PROXY: socks5://127.0.0.1:1080
 
       - if: failure()
