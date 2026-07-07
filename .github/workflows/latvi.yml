@@ -1,27 +1,120 @@
 name: Latvi Auto Earn
 
 on:
-
   workflow_dispatch:
-
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav1/latvi
+          repository: seav1/abc
           token: ${{ secrets.REPO_PAT }}
           ref: main
+      - name: Start sing-box
+        run: |
+          set -euo pipefail
+          SINGBOX_VERSION=1.10.0
+          curl -fsSL -o /tmp/singbox.tar.gz \
+            "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/singbox.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/sing-box-${SINGBOX_VERSION}-linux-amd64/sing-box /usr/local/bin/sing-box
 
-      - uses: alphaxcv/warp@1.0
+          python3 - <<'PYEOF' > /tmp/singbox-config.json
+          import json, os
+          from urllib.parse import urlparse, parse_qs, unquote
 
+          link = os.environ["NODE_LINK"].strip()
+
+          def g(q, key, default=None):
+              return q.get(key, [default])[0]
+
+          if link.startswith("vless://"):
+              u = urlparse(link)
+              q = parse_qs(u.query)
+              net_type = g(q, "type", "tcp")
+              security = g(q, "security", "none")
+              outbound = {
+                  "type": "vless", "tag": "proxy-out",
+                  "server": u.hostname, "server_port": u.port,
+                  "uuid": u.username, "flow": g(q, "flow", "") or "",
+                  "packet_encoding": "xudp",
+              }
+              if net_type == "ws":
+                  outbound["transport"] = {"type": "ws", "path": g(q, "path", "/") or "/",
+                      "headers": {"Host": g(q, "host", u.hostname)} if g(q, "host") else {}}
+              elif net_type == "grpc":
+                  outbound["transport"] = {"type": "grpc", "service_name": g(q, "serviceName", "") or ""}
+              if security in ("tls", "reality"):
+                  tls = {"enabled": True, "server_name": g(q, "sni", u.hostname),
+                         "insecure": g(q, "allowInsecure", "0") in ("1", "true")}
+                  if g(q, "fp"):
+                      tls["utls"] = {"enabled": True, "fingerprint": g(q, "fp")}
+                  if security == "reality":
+                      tls["reality"] = {"enabled": True, "public_key": g(q, "pbk", ""),
+                                         "short_id": g(q, "sid", "") or ""}
+                  outbound["tls"] = tls
+          elif link.startswith("hysteria2://") or link.startswith("hy2://"):
+              u = urlparse("hysteria2://" + link.split("://", 1)[1])
+              q = parse_qs(u.query)
+              outbound = {
+                  "type": "hysteria2", "tag": "proxy-out",
+                  "server": u.hostname, "server_port": u.port,
+                  "password": unquote(u.username or ""),
+                  "tls": {"enabled": True, "server_name": g(q, "sni", u.hostname),
+                          "insecure": g(q, "insecure", "0") in ("1", "true")},
+              }
+              if g(q, "obfs") == "salamander":
+                  outbound["obfs"] = {"type": "salamander", "password": g(q, "obfs-password", "") or ""}
+          else:
+              raise ValueError(f"不支持的链接格式: {link[:20]}...")
+
+          config = {
+              "log": {"level": "info", "timestamp": True},
+              "dns": {
+                  "servers": [
+                      {"tag": "remote", "address": "8.8.8.8", "detour": "proxy-out"},
+                      {"tag": "direct", "address": "223.5.5.5", "detour": "direct-out"},
+                  ],
+                  "rules": [{"outbound": "any", "server": "direct"}],
+              },
+              "inbounds": [{
+                  "type": "tun", "tag": "tun-in", "interface_name": "tun0",
+                  "address": ["172.19.0.1/30"], "mtu": 9000,
+                  "auto_route": True, "strict_route": True, "stack": "system", "sniff": True,
+              }],
+              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "block", "tag": "block-out"}],
+              "route": {
+                  "auto_detect_interface": True, "final": "proxy-out",
+                  "rules": [{"protocol": "dns", "outbound": "direct-out"}],
+              },
+          }
+          print(json.dumps(config, indent=2, ensure_ascii=False))
+          PYEOF
+
+          # 排除 GitHub Actions 自身流量,避免日志/上传被代理接管卡死
+          for host in api.github.com github.com pipelines.actions.githubusercontent.com results-receiver.actions.githubusercontent.com; do
+            for ip in $(getent ahosts "$host" | awk '{print $1}' | sort -u); do
+              sudo ip route add "$ip/32" dev eth0 table 100 2>/dev/null || true
+              sudo ip rule add to "$ip/32" table 100 priority 50 2>/dev/null || true
+            done
+          done
+
+          sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
+          echo $! | sudo tee /tmp/singbox.pid > /dev/null
+
+          for i in $(seq 1 15); do
+            ip addr show tun0 &>/dev/null && break
+            sleep 1
+          done
+          curl -fsS --max-time 10 https://ipinfo.io/json || (echo "代理出口检测失败,查看日志:"; cat /tmp/singbox.log; exit 1)
+        env:
+          NODE_LINK: ${{ secrets.NODE_LINK }}
       - run: bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
           SE_BINARY_PATH: /usr/bin/google-chrome
-
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
