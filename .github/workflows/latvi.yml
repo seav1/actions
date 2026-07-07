@@ -114,8 +114,6 @@ jobs:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
           SE_BINARY_PATH: /usr/bin/google-chrome
-          HTTP_PROXY: http://127.0.0.1:1080
-          HTTPS_PROXY: http://127.0.0.1:1080
           ALL_PROXY: socks5h://127.0.0.1:1080
 
       - if: failure()
