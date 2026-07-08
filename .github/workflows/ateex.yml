@@ -1,9 +1,9 @@
 name: Ateex Auto Earn
 
 on:
-  schedule:
-    - cron: "11 2 * * *"
   workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
 
 jobs:
   run-bot:
@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav1/ateex
+          repository: seav/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
@@ -21,7 +21,6 @@ jobs:
         env:
           ATEEX_EMAIL: ${{ secrets.ATEEX_EMAIL }}
           ATEEX_PASSWORD: ${{ secrets.ATEEX_PASSWORD }}
-          SE_BINARY_PATH: /usr/bin/google-chrome
 
       - if: failure()
         uses: actions/upload-artifact@v4
