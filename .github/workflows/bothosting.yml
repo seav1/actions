@@ -28,6 +28,8 @@ jobs:
         env:
           DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
           DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
+          REPO_PAT: ${{ secrets.REPO_PAT }}
+          
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
