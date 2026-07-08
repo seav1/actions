@@ -2,18 +2,17 @@ name: Latvi Auto Earn
 
 on:
   workflow_dispatch:
-  
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
         with:
           repository: seav1/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
-          
+
       - name: Start sing-box
         run: |
           set -euo pipefail
@@ -22,16 +21,16 @@ jobs:
             "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz"
           tar -xzf /tmp/singbox.tar.gz -C /tmp
           sudo install -m 0755 /tmp/sing-box-${SINGBOX_VERSION}-linux-amd64/sing-box /usr/local/bin/sing-box
- 
+
           python3 - <<'PYEOF' > /tmp/singbox-config.json
           import json, os
           from urllib.parse import urlparse, parse_qs, unquote
- 
+
           link = os.environ["NODE_LINK"].strip()
- 
+
           def g(q, key, default=None):
               return q.get(key, [default])[0]
- 
+
           if link.startswith("vless://"):
               u = urlparse(link)
               q = parse_qs(u.query)
@@ -41,6 +40,7 @@ jobs:
                   "type": "vless", "tag": "proxy-out",
                   "server": u.hostname, "server_port": u.port,
                   "uuid": u.username, "flow": g(q, "flow", "") or "",
+                  "packet_encoding": "xudp",
               }
               if net_type == "ws":
                   outbound["transport"] = {"type": "ws", "path": g(q, "path", "/") or "/",
@@ -70,66 +70,41 @@ jobs:
                   outbound["obfs"] = {"type": "salamander", "password": g(q, "obfs-password", "") or ""}
           else:
               raise ValueError(f"不支持的链接格式: {link[:20]}...")
- 
+
           config = {
               "log": {"level": "info", "timestamp": True},
-              "dns": {
-                  "servers": [
-                      {"tag": "dns-remote", "address": "8.8.8.8", "detour": "proxy-out"}
-                  ],
-                  "final": "dns-remote",
-                  "strategy": "prefer_ipv4",
-              },
               "inbounds": [{
-                  "type": "tun", "tag": "tun-in",
-                  "interface_name": "tun0",
-                  "address": ["172.19.0.1/30"],
-                  "mtu": 1280,
-                  "auto_route": True,
-                  "strict_route": True,
-                  "stack": "system",
-                  "sniff": True,
+                  "type": "mixed", 
+                  "tag": "mixed-in", 
+                  "listen": "127.0.0.1",
+                  "listen_port": 1080,
+                  "sniff": True
               }],
-              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "dns", "tag": "dns-out"}],
+              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "block", "tag": "block-out"}],
               "route": {
-                  "auto_detect_interface": True,
-                  "rules": [
-                      {"protocol": "dns", "outbound": "dns-out"}
-                  ],
-                  "final": "proxy-out",
-              },
+                  "final": "proxy-out"
+              }
           }
           print(json.dumps(config, indent=2, ensure_ascii=False))
           PYEOF
- 
-          LAN=$(ip route get 1.1.1.1 | grep -oP 'src \K\S+')
- 
+
+          # 启动 sing-box
           sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
           echo $! | sudo tee /tmp/singbox.pid > /dev/null
- 
-          for i in $(seq 1 15); do
-            ip addr show tun0 &>/dev/null && break
-            sleep 1
-          done
- 
-          sudo ip rule add priority 100 from "$LAN" lookup main
- 
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://ipinfo.io/json)
-          if [ "$STATUS" != "200" ]; then
-            echo "代理连通性检测失败 (HTTP $STATUS),查看 sing-box 日志:"
-            cat /tmp/singbox.log
-            exit 1
-          fi
-          
+
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
-          
-      - run: bash run.sh
+
+      - name: Run script with proxy
+        run: |
+          ALL_PROXY="" pip install pysocks
+          # 2. 正常执行你的脚本
+          bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
-          SE_BINARY_PATH: /usr/bin/google-chrome
-          
+          ALL_PROXY: socks5://127.0.0.1:1080
+
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
