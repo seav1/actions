@@ -17,7 +17,7 @@ jobs:
 
       - uses: alphaxcv/warp@1.0
 
-      - run: bash run.sh
+      - run: bash test.sh
         env:
           ATEEX_EMAIL: ${{ secrets.ATEEX_EMAIL }}
           ATEEX_PASSWORD: ${{ secrets.ATEEX_PASSWORD }}
