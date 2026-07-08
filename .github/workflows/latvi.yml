@@ -70,6 +70,13 @@ jobs:
 
           config = {
               "log": {"level": "info", "timestamp": True},
+              "dns": {
+                  "servers": [
+                      {"tag": "dns-remote", "address": "8.8.8.8", "detour": "proxy-out"}
+                  ],
+                  "final": "dns-remote",
+                  "strategy": "prefer_ipv4",
+              },
               "inbounds": [{
                   "type": "tun", "tag": "tun-in",
                   "interface_name": "tun0",
@@ -97,6 +104,7 @@ jobs:
             ip addr show tun0 &>/dev/null && break
             sleep 1
           done
+
           sudo ip rule add priority 100 from "$LAN" lookup main
           ip rule show
 
