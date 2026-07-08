@@ -121,9 +121,13 @@ jobs:
  
           sudo ip rule add priority 100 from "$LAN" lookup main
  
+          set +e
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://ipinfo.io/json)
-          if [ "$STATUS" != "200" ]; then
-            echo "代理连通性检测失败 (HTTP $STATUS),查看 sing-box 日志:"
+          CURL_EXIT=$?
+          set -e
+ 
+          if [ "$CURL_EXIT" != "0" ] || [ "$STATUS" != "200" ]; then
+            echo "代理连通性检测失败 (curl exit=$CURL_EXIT, http=$STATUS),sing-box 日志:"
             cat /tmp/singbox.log
             exit 1
           fi
