@@ -103,6 +103,7 @@ jobs:
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
+          SE_BINARY_PATH: /usr/bin/google-chrome
           ALL_PROXY: socks5://127.0.0.1:1080
 
       - if: failure()
