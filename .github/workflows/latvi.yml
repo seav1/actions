@@ -87,8 +87,14 @@ jobs:
                   "stack": "system",
                   "sniff": True,
               }],
-              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}],
-              "route": {"auto_detect_interface": True, "final": "proxy-out"},
+              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "dns", "tag": "dns-out"}],
+              "route": {
+                  "auto_detect_interface": True,
+                  "rules": [
+                      {"protocol": "dns", "outbound": "dns-out"}
+                  ],
+                  "final": "proxy-out",
+              },
           }
           print(json.dumps(config, indent=2, ensure_ascii=False))
           PYEOF
