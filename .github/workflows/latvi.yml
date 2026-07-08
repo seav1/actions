@@ -1,8 +1,6 @@
 name: Latvi Auto Earn
-
 on:
   workflow_dispatch:
-
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -12,7 +10,6 @@ jobs:
           repository: seav1/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
-
       - name: Start sing-box
         run: |
           set -euo pipefail
@@ -73,38 +70,63 @@ jobs:
 
           config = {
               "log": {"level": "info", "timestamp": True},
+              "dns": {
+                  "servers": [
+                      {"tag": "dns-remote", "address": "8.8.8.8", "detour": "proxy-out"}
+                  ],
+                  "final": "dns-remote",
+                  "strategy": "prefer_ipv4",
+              },
               "inbounds": [{
-                  "type": "mixed", 
-                  "tag": "mixed-in", 
-                  "listen": "127.0.0.1",
-                  "listen_port": 1080,
-                  "sniff": True
+                  "type": "tun", "tag": "tun-in",
+                  "interface_name": "tun0",
+                  "address": ["172.19.0.1/30"],
+                  "mtu": 1280,
+                  "auto_route": True,
+                  "strict_route": True,
+                  "stack": "system",
+                  "sniff": True,
               }],
-              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "block", "tag": "block-out"}],
+              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "dns", "tag": "dns-out"}],
               "route": {
-                  "final": "proxy-out"
-              }
+                  "auto_detect_interface": True,
+                  "rules": [
+                      {"protocol": "dns", "outbound": "dns-out"}
+                  ],
+                  "final": "proxy-out",
+              },
           }
           print(json.dumps(config, indent=2, ensure_ascii=False))
           PYEOF
 
-          # 启动 sing-box
+          LAN=$(ip route get 1.1.1.1 | grep -oP 'src \K\S+')
+          echo "Runner LAN 源地址: $LAN"
+
           sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
           echo $! | sudo tee /tmp/singbox.pid > /dev/null
 
+          echo "等待 tun0 就绪..."
+          for i in $(seq 1 15); do
+            ip addr show tun0 &>/dev/null && break
+            sleep 1
+          done
+
+          sudo ip rule add priority 100 from "$LAN" lookup main
+          ip rule show
+
+          echo "代理出口(新连接,应显示节点 IP):"
+          curl -fsS --max-time 10 https://ipinfo.io/json \
+            || (echo "代理出口检测失败,查看日志:"; cat /tmp/singbox.log; exit 1)
+
+          echo "Runner 自身出口(应仍是 GitHub Actions 原始 IP):"
+          curl -fsS --max-time 10 --interface "$LAN" https://ipinfo.io/json || true
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
-
-      - name: Run script with proxy
-        run: |
-          ALL_PROXY="" pip install pysocks
-          # 2. 正常执行你的脚本
-          bash run.sh
+      - run: bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
-          ALL_PROXY: socks5://127.0.0.1:1080
-
+          SE_BINARY_PATH: /usr/bin/google-chrome
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
