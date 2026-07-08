@@ -1,8 +1,6 @@
 name: Latvi Auto Earn
 
 on:
-  schedule:
-    - cron: "11 2 * * *"
   workflow_dispatch:
 
 jobs:
@@ -15,13 +13,113 @@ jobs:
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
-      - uses: alphaxcv/warp@1.0
+      - name: Start sing-box
+        run: |
+          set -euo pipefail
+          SINGBOX_VERSION=1.10.0
+          curl -fsSL -o /tmp/singbox.tar.gz \
+            "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz"
+          tar -xzf /tmp/singbox.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/sing-box-${SINGBOX_VERSION}-linux-amd64/sing-box /usr/local/bin/sing-box
 
-      - run: bash run.sh
+          python3 - <<'PYEOF' > /tmp/singbox-config.json
+          import json, os
+          from urllib.parse import urlparse, parse_qs, unquote
+
+          link = os.environ["NODE_LINK"].strip()
+
+          def g(q, key, default=None):
+              return q.get(key, [default])[0]
+
+          if link.startswith("vless://"):
+              u = urlparse(link)
+              q = parse_qs(u.query)
+              net_type = g(q, "type", "tcp")
+              security = g(q, "security", "none")
+              outbound = {
+                  "type": "vless", "tag": "proxy-out",
+                  "server": u.hostname, "server_port": u.port,
+                  "uuid": u.username, "flow": g(q, "flow", "") or "",
+                  "packet_encoding": "xudp",
+              }
+              if net_type == "ws":
+                  outbound["transport"] = {"type": "ws", "path": g(q, "path", "/") or "/",
+                      "headers": {"Host": g(q, "host", u.hostname)} if g(q, "host") else {}}
+              elif net_type == "grpc":
+                  outbound["transport"] = {"type": "grpc", "service_name": g(q, "serviceName", "") or ""}
+              if security in ("tls", "reality"):
+                  tls = {"enabled": True, "server_name": g(q, "sni", u.hostname),
+                         "insecure": g(q, "allowInsecure", "0") in ("1", "true")}
+                  if g(q, "fp"):
+                      tls["utls"] = {"enabled": True, "fingerprint": g(q, "fp")}
+                  if security == "reality":
+                      tls["reality"] = {"enabled": True, "public_key": g(q, "pbk", ""),
+                                         "short_id": g(q, "sid", "") or ""}
+                  outbound["tls"] = tls
+          elif link.startswith("hysteria2://") or link.startswith("hy2://"):
+              u = urlparse("hysteria2://" + link.split("://", 1)[1])
+              q = parse_qs(u.query)
+              outbound = {
+                  "type": "hysteria2", "tag": "proxy-out",
+                  "server": u.hostname, "server_port": u.port,
+                  "password": unquote(u.username or ""),
+                  "tls": {"enabled": True, "server_name": g(q, "sni", u.hostname),
+                          "insecure": g(q, "insecure", "0") in ("1", "true")},
+              }
+              if g(q, "obfs") == "salamander":
+                  outbound["obfs"] = {"type": "salamander", "password": g(q, "obfs-password", "") or ""}
+          else:
+              raise ValueError(f"不支持的链接格式: {link[:20]}...")
+
+          config = {
+              "log": {"level": "info", "timestamp": True},
+              "inbounds": [{
+                  "type": "mixed", 
+                  "tag": "mixed-in", 
+                  "listen": "127.0.0.1",
+                  "listen_port": 1080,
+                  "sniff": True
+              }],
+              "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "block", "tag": "block-out"}],
+              "route": {
+                  "final": "proxy-out"
+              }
+          }
+          print(json.dumps(config, indent=2, ensure_ascii=False))
+          PYEOF
+
+          # 启动 sing-box
+          sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
+          echo $! | sudo tee /tmp/singbox.pid > /dev/null
+
+          # 等待代理就绪并验证 (使用纯 socks5 验证)
+          success=0
+          for i in {1..6}; do
+            if curl -fsS -x socks5://127.0.0.1:1080 --max-time 5 https://ipinfo.io/json; then
+              success=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ $success -ne 1 ]; then
+            echo "代理出口检测失败, 查看日志:"
+            cat /tmp/singbox.log
+            exit 1
+          fi
+        env:
+          NODE_LINK: ${{ secrets.NODE_LINK }}
+
+      - name: Run script with proxy
+        run: |
+          ALL_PROXY="" pip install pysocks
+          # 2. 正常执行你的脚本
+          bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
           SE_BINARY_PATH: /usr/bin/google-chrome
+          ALL_PROXY: socks5://127.0.0.1:1080
 
       - if: failure()
         uses: actions/upload-artifact@v4
