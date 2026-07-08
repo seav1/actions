@@ -11,11 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav1/ateex
+          repository: seav1/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
       - uses: alphaxcv/warp@1.0
+      
       - run: bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
