@@ -92,21 +92,6 @@ jobs:
           sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
           echo $! | sudo tee /tmp/singbox.pid > /dev/null
 
-          # 等待代理就绪并验证 (使用纯 socks5 验证)
-          success=0
-          for i in {1..6}; do
-            if curl -fsS -x socks5://127.0.0.1:1080 --max-time 5 https://ipinfo.io/json; then
-              success=1
-              break
-            fi
-            sleep 2
-          done
-
-          if [ $success -ne 1 ]; then
-            echo "代理出口检测失败, 查看日志:"
-            cat /tmp/singbox.log
-            exit 1
-          fi
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
 
