@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav/latvi
+          repository: seav1/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
