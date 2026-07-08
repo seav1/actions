@@ -1,15 +1,19 @@
 name: Latvi Auto Earn
+
 on:
   workflow_dispatch:
+  
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v4
         with:
           repository: seav1/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
+          
       - name: Start sing-box
         run: |
           set -euo pipefail
@@ -117,13 +121,16 @@ jobs:
             cat /tmp/singbox.log
             exit 1
           fi
+          
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
+          
       - run: bash run.sh
         env:
           LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
           SE_BINARY_PATH: /usr/bin/google-chrome
+          
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
