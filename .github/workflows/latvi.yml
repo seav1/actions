@@ -100,26 +100,23 @@ jobs:
           PYEOF
 
           LAN=$(ip route get 1.1.1.1 | grep -oP 'src \K\S+')
-          echo "Runner LAN 源地址: $LAN"
 
           sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
           echo $! | sudo tee /tmp/singbox.pid > /dev/null
 
-          echo "等待 tun0 就绪..."
           for i in $(seq 1 15); do
             ip addr show tun0 &>/dev/null && break
             sleep 1
           done
 
           sudo ip rule add priority 100 from "$LAN" lookup main
-          ip rule show
 
-          echo "代理出口(新连接,应显示节点 IP):"
-          curl -fsS --max-time 10 https://ipinfo.io/json \
-            || (echo "代理出口检测失败,查看日志:"; cat /tmp/singbox.log; exit 1)
-
-          echo "Runner 自身出口(应仍是 GitHub Actions 原始 IP):"
-          curl -fsS --max-time 10 --interface "$LAN" https://ipinfo.io/json || true
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://ipinfo.io/json)
+          if [ "$STATUS" != "200" ]; then
+            echo "代理连通性检测失败 (HTTP $STATUS),查看 sing-box 日志:"
+            cat /tmp/singbox.log
+            exit 1
+          fi
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
       - run: bash run.sh
