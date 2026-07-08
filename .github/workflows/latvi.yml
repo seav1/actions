@@ -82,13 +82,9 @@ jobs:
               "log": {"level": "info", "timestamp": True},
               "dns": {
                   "servers": [
-                      {"tag": "dns-remote", "address": "8.8.8.8", "detour": "proxy-out"},
                       {"tag": "dns-direct", "address": "223.5.5.5", "detour": "direct-out"}
                   ],
-                  "rules": [
-                      {"domain": [outbound["server"]], "server": "dns-direct"}
-                  ],
-                  "final": "dns-remote",
+                  "final": "dns-direct",
                   "strategy": "prefer_ipv4",
               },
               "inbounds": [{
