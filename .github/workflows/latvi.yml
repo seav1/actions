@@ -23,6 +23,13 @@ jobs:
           tar -xzf /tmp/singbox.tar.gz -C /tmp
           sudo install -m 0755 /tmp/sing-box-${SINGBOX_VERSION}-linux-amd64/sing-box /usr/local/bin/sing-box
  
+          echo "== 诊断: 直接测试到节点服务器的 TCP/TLS 连通性(不经过 sing-box) =="
+          NODE_HOST=$(python3 -c "import os,urllib.parse as p; print(p.urlparse(os.environ['NODE_LINK']).hostname)")
+          NODE_PORT=$(python3 -c "import os,urllib.parse as p; print(p.urlparse(os.environ['NODE_LINK']).port)")
+          timeout 8 bash -c "cat < /dev/null > /dev/tcp/${NODE_HOST}/${NODE_PORT}" \
+            && echo "TCP 连接成功: ${NODE_HOST}:${NODE_PORT}" \
+            || echo "TCP 连接失败/超时: ${NODE_HOST}:${NODE_PORT} (很可能是节点屏蔽了这个 IP 段)"
+ 
           python3 - <<'PYEOF' > /tmp/singbox-config.json
           import json, os
           from urllib.parse import urlparse, parse_qs, unquote
