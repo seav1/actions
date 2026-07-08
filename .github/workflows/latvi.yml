@@ -6,7 +6,6 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,14 +22,21 @@ jobs:
           tar -xzf /tmp/singbox.tar.gz -C /tmp
           sudo install -m 0755 /tmp/sing-box-${SINGBOX_VERSION}-linux-amd64/sing-box /usr/local/bin/sing-box
 
-          python3 - <<'PYEOF'
+          echo "== 诊断: 直接测试到节点服务器的 TCP/TLS 连通性(不经过 sing-box) =="
+          NODE_HOST=$(python3 -c "import os,urllib.parse as p; print(p.urlparse(os.environ['NODE_LINK']).hostname)")
+          NODE_PORT=$(python3 -c "import os,urllib.parse as p; print(p.urlparse(os.environ['NODE_LINK']).port)")
+          timeout 8 bash -c "cat < /dev/null > /dev/tcp/${NODE_HOST}/${NODE_PORT}" \
+            && echo "TCP 连接成功: ${NODE_HOST}:${NODE_PORT}" \
+            || echo "TCP 连接失败/超时: ${NODE_HOST}:${NODE_PORT} (很可能是节点屏蔽了这个 IP 段)"
+
+          python3 - <<'PYEOF' > /tmp/singbox-config.json
           import json, os
           from urllib.parse import urlparse, parse_qs, unquote
 
           link = os.environ["NODE_LINK"].strip()
-          def g(q, key, default=""):
-              val = q.get(key, [""])[0]
-              return val if val else default
+
+          def g(q, key, default=None):
+              return q.get(key, [default])[0]
 
           if link.startswith("vless://"):
               u = urlparse(link)
@@ -39,43 +45,91 @@ jobs:
               security = g(q, "security", "none")
               outbound = {
                   "type": "vless", "tag": "proxy-out",
-                  "server": u.hostname, "server_port": u.port or 443,
-                  "uuid": u.username, "flow": g(q, "flow")
+                  "server": u.hostname, "server_port": u.port,
+                  "uuid": u.username, "flow": g(q, "flow", "") or "",
               }
               if net_type == "ws":
-                  outbound["transport"] = {"type": "ws", "path": g(q, "path", "/"), "headers": {"Host": g(q, "host") or g(q, "sni") or u.hostname}}
+                  outbound["transport"] = {"type": "ws", "path": g(q, "path", "/") or "/",
+                      "headers": {"Host": g(q, "host", u.hostname)} if g(q, "host") else {}}
               elif net_type == "grpc":
-                  outbound["transport"] = {"type": "grpc", "service_name": g(q, "serviceName")}
+                  outbound["transport"] = {"type": "grpc", "service_name": g(q, "serviceName", "") or ""}
               if security in ("tls", "reality"):
-                  tls = {"enabled": True, "server_name": g(q, "sni", u.hostname), "insecure": g(q, "allowInsecure", "0") in ("1", "true")}
-                  if g(q, "fp"): tls["utls"] = {"enabled": True, "fingerprint": g(q, "fp")}
-                  if security == "reality": tls["reality"] = {"enabled": True, "public_key": g(q, "pbk"), "short_id": g(q, "sid")}
+                  tls = {"enabled": True, "server_name": g(q, "sni", u.hostname),
+                         "insecure": g(q, "allowInsecure", "0") in ("1", "true")}
+                  if g(q, "fp"):
+                      tls["utls"] = {"enabled": True, "fingerprint": g(q, "fp")}
+                  if security == "reality":
+                      tls["reality"] = {"enabled": True, "public_key": g(q, "pbk", ""),
+                                         "short_id": g(q, "sid", "") or ""}
                   outbound["tls"] = tls
           elif link.startswith("hysteria2://") or link.startswith("hy2://"):
               u = urlparse("hysteria2://" + link.split("://", 1)[1])
               q = parse_qs(u.query)
-              outbound = {"type": "hysteria2", "tag": "proxy-out", "server": u.hostname, "server_port": u.port or 443, "password": unquote(u.username or ""), "tls": {"enabled": True, "server_name": g(q, "sni", u.hostname), "insecure": g(q, "insecure", "0") in ("1", "true")}}
-              if g(q, "obfs") == "salamander": outbound["obfs"] = {"type": "salamander", "password": g(q, "obfs-password")}
+              outbound = {
+                  "type": "hysteria2", "tag": "proxy-out",
+                  "server": u.hostname, "server_port": u.port,
+                  "password": unquote(u.username or ""),
+                  "tls": {"enabled": True, "server_name": g(q, "sni", u.hostname),
+                          "insecure": g(q, "insecure", "0") in ("1", "true")},
+              }
+              if g(q, "obfs") == "salamander":
+                  outbound["obfs"] = {"type": "salamander", "password": g(q, "obfs-password", "") or ""}
+          else:
+              raise ValueError(f"不支持的链接格式: {link[:20]}...")
 
           config = {
-              "log": {"level": "error"},
-              "dns": {"servers": [{"tag": "dns-direct", "address": "223.5.5.5", "detour": "direct-out"}], "final": "dns-direct"},
-              "inbounds": [{"type": "tun", "tag": "tun-in", "interface_name": "tun0", "address": ["172.19.0.1/30"], "mtu": 1280, "auto_route": True, "strict_route": True, "stack": "system", "sniff": True}],
+              "log": {"level": "info", "timestamp": True},
+              "dns": {
+                  "servers": [
+                      {"tag": "dns-direct", "address": "223.5.5.5", "detour": "direct-out"}
+                  ],
+                  "final": "dns-direct",
+                  "strategy": "prefer_ipv4",
+              },
+              "inbounds": [{
+                  "type": "tun", "tag": "tun-in",
+                  "interface_name": "tun0",
+                  "address": ["172.19.0.1/30"],
+                  "mtu": 1280,
+                  "auto_route": True,
+                  "strict_route": True,
+                  "stack": "system",
+                  "sniff": True,
+              }],
               "outbounds": [outbound, {"type": "direct", "tag": "direct-out"}, {"type": "dns", "tag": "dns-out"}],
-              "route": {"auto_detect_interface": True, "rules": [{"protocol": "dns", "outbound": "dns-out"}], "final": "proxy-out"}
+              "route": {
+                  "auto_detect_interface": True,
+                  "rules": [
+                      {"protocol": "dns", "outbound": "dns-out"}
+                  ],
+                  "final": "proxy-out",
+              },
           }
-          with open("/tmp/singbox-config.json", "w") as f:
-              json.dump(config, f)
+          print(json.dumps(config, indent=2, ensure_ascii=False))
           PYEOF
 
           LAN=$(ip route get 1.1.1.1 | grep -oP 'src \K\S+')
-          sudo nohup sing-box run -c /tmp/singbox-config.json > /dev/null 2>&1 &
-          
+
+          sudo nohup sing-box run -c /tmp/singbox-config.json > /tmp/singbox.log 2>&1 &
+          echo $! | sudo tee /tmp/singbox.pid > /dev/null
+
           for i in $(seq 1 15); do
             ip addr show tun0 &>/dev/null && break
             sleep 1
           done
+
           sudo ip rule add priority 100 from "$LAN" lookup main
+
+          set +e
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://ipinfo.io/json)
+          CURL_EXIT=$?
+          set -e
+
+          if [ "$CURL_EXIT" != "0" ] || [ "$STATUS" != "200" ]; then
+            echo "代理连通性检测失败 (curl exit=$CURL_EXIT, http=$STATUS),sing-box 日志:"
+            cat /tmp/singbox.log
+            exit 1
+          fi
           
         env:
           NODE_LINK: ${{ secrets.NODE_LINK }}
