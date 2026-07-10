@@ -26,8 +26,7 @@ jobs:
        
       - run: bash run.sh
         env:
-          DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
-          DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           REPO_PAT: ${{ secrets.REPO_PAT }}
           
       - if: failure()
