@@ -1,7 +1,6 @@
 name: Bot-hosting earn Coin
 
 on:
-
   workflow_dispatch:
 
 jobs:
@@ -13,14 +12,13 @@ jobs:
           repository: seav1/bothosting
           token: ${{ secrets.REPO_PAT }}
           ref: main
-          
+
       - uses: alphaxcv/warp@1.0
-      
+
       - run: bash run.sh
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          REPO_PAT: ${{ secrets.REPO_PAT }}
-          
+
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
