@@ -1,8 +1,7 @@
 name: Bot-hosting earn Coin
 
 on:
-  schedule:
-    - cron: "23 2 * * *"
+
   workflow_dispatch:
 
 jobs:
