@@ -18,7 +18,7 @@ jobs:
       
       - run: bash run.sh
         env:
-          SESSION_TOKEN: ${{ secrets.SESSION_TOKEN }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           REPO_PAT: ${{ secrets.REPO_PAT }}
           
       - if: failure()
