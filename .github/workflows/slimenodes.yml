@@ -6,26 +6,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  farm:
+  run-bot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav1/slimenodes
+          repository: ${{ secrets.TEST_REPO }}
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
+      - uses: alphaxcv/warp@1.0
+
       - run: bash run.sh
         env:
-          DISCORD_EMAIL: ${{ secrets.DISCORD_EMAIL }}
-          DISCORD_PASSWORD: ${{ secrets.DISCORD_PASSWORD }}
-          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
-          MAX_ADS: '20'
-          MAX_FAILS: '3'
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          HEADLESS: "true"
 
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshots
-          retention-days: 1
+          name: debug-files
           path: "*.png"
