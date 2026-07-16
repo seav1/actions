@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.TEST_REPO }}
+          repository: seav1/slimenodes
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
