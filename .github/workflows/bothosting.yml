@@ -2,7 +2,7 @@ name: Bot-Hosting Auto Farm
 
 on:
   schedule:
-    - cron: '13 22 * * *'
+    - cron: '13 00 * * *'
   workflow_dispatch:
 
 jobs:
