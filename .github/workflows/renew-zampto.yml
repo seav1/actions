@@ -12,10 +12,19 @@ jobs:
           repository: seav1/zampto
           token: ${{ secrets.REPO_PAT }}
           ref: main
-
+          
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          
+      - name: Setup proxy
+        id: proxy
+        uses: alphaxcv/proxy_sb@1.0
+        with:
+          node_link: ${{ secrets.NODE_LINK }}
+          
       - run: bash run.sh
         env:
-          HY2_LINK: ${{ secrets.HY2_LINK_ZAMPTO }}
           LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL_ZAMPTO }}
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD_ZAMPTO }}
 
