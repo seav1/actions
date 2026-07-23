@@ -1,0 +1,27 @@
+name: Therose Auto Renew
+
+on:
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/therose
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          THEROSE_EMAIL: ${{ secrets.THEROSE_EMAIL }}
+          THEROSE_PASSWORD: ${{ secrets.THEROSE_PASSWORD }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
+          if-no-files-found: ignore
