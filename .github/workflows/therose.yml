@@ -13,6 +13,8 @@ jobs:
           repository: seav1/therose
           token: ${{ secrets.REPO_PAT }}
           ref: main
+          
+      - uses: alphaxcv/warpx@1.0
 
       - run: bash run.sh
         env:
