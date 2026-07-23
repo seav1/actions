@@ -3,7 +3,7 @@ name: Therose Auto Renew
 on:
   workflow_dispatch:
   schedule:
-    - cron: '18 15 23 7 *' # 脚本会自动提取续期后的到期时间并修改此行
+    - cron: '18 3 24 7 *' # 脚本会自动提取续期后的到期时间并修改此行
 
 jobs:
   Renew:
