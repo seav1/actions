@@ -13,6 +13,8 @@ jobs:
       # 步骤1：拉取公库代码（包含当前 therose.yml）
       - name: Checkout Public Repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.REPO_PAT }}
 
       # 步骤2：拉取私库代码到 therose_code 子目录
       - name: Checkout Private Code Repo
