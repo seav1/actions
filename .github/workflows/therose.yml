@@ -3,27 +3,40 @@ name: Therose Auto Renew
 on:
   workflow_dispatch:
   schedule:
-    - cron: '18 15 23 7 *' # 这里的 cron 会由 Python 脚本自动读取并更新
+    - cron: '18 15 23 7 *' # 脚本会自动提取续期后的到期时间并修改此行
 
 jobs:
   Renew:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      # 步骤1：拉取公库代码（包含当前 therose.yml）
+      - name: Checkout Public Repo
+        uses: actions/checkout@v4
+
+      # 步骤2：拉取私库代码到 therose_code 子目录
+      - name: Checkout Private Code Repo
+        uses: actions/checkout@v4
         with:
           repository: seav1/therose
           token: ${{ secrets.REPO_PAT }}
           ref: main
+          path: therose_code
 
       - uses: alphaxcv/warp@1.0
 
-      - run: bash run.sh
+      # 步骤3：进入私库子目录运行 bash run.sh
+      - name: Run Auto Renew Script
+        run: |
+          cd therose_code
+          bash run.sh
         env:
           THEROSE_EMAIL: ${{ secrets.THEROSE_EMAIL }}
           THEROSE_PASSWORD: ${{ secrets.THEROSE_PASSWORD }}
 
-      - run: |
+      # 步骤4：将修改后的 therose.yml 提交并推送到公库
+      - name: Commit and Push Updated Workflow
+        run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .github/workflows/therose.yml
@@ -33,5 +46,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
-          path: "*.png"
+          path: "therose_code/*.png"
           if-no-files-found: ignore
