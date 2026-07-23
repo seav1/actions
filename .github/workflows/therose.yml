@@ -2,6 +2,8 @@ name: Therose Auto Renew
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '18 15 23 7 *' # 这里的 cron 会由 Python 脚本自动读取并更新
 
 jobs:
   Renew:
@@ -13,13 +15,19 @@ jobs:
           repository: seav1/therose
           token: ${{ secrets.REPO_PAT }}
           ref: main
-          
+
       - uses: alphaxcv/warp@1.0
 
       - run: bash run.sh
         env:
           THEROSE_EMAIL: ${{ secrets.THEROSE_EMAIL }}
           THEROSE_PASSWORD: ${{ secrets.THEROSE_PASSWORD }}
+
+      - run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .github/workflows/therose.yml
+          git diff --staged --quiet || (git commit -m "ci: 自动更新下次运行时间 (过期前30分钟)" && git push)
 
       - if: failure()
         uses: actions/upload-artifact@v4
