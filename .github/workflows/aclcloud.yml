@@ -18,7 +18,6 @@ jobs:
       - uses: alphaxcv/warp@1.0
 
       - run: bash run.sh
-        env:
 
       - if: failure()
         uses: actions/upload-artifact@v4
