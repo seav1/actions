@@ -42,7 +42,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .github/workflows/therose.yml
-          git diff --staged --quiet || (git commit -m "ci: 自动更新下次运行时间 (过期前30分钟)" && git push)
+          git diff --staged --quiet || (git commit -m "ci: 自动更新下次运行时间 (过期前60分钟)" && git push)
 
       - if: failure()
         uses: actions/upload-artifact@v4
