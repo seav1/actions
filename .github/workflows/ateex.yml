@@ -6,6 +6,7 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
@@ -14,11 +15,11 @@ jobs:
           ref: main
 
       - uses: alphaxcv/warp@1.0
+        continue-on-error: true
 
       - run: bash run.sh
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          REPO_PAT: ${{ secrets.REPO_PAT }}
           MAX_ADS: "20"
           MAX_FAILS: "3"
           ROUND_COOL_MIN: "2"
@@ -28,5 +29,8 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: runtime-screenshot
-          path: "*.png"
+          name: runtime-output
+          path: |
+            *.png
+            *.log
+          if-no-files-found: ignore
