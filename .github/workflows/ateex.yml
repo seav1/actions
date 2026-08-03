@@ -2,7 +2,7 @@ name: Ateex Auto Earn
 
 on:
   schedule:
-    - cron: '13 17 * * *'
+    - cron: '13 */6 * * *'
   workflow_dispatch:
 
 jobs:
