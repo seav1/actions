@@ -1,4 +1,4 @@
-name: Zampto Auto Renew
+name: test
 
 on:
   workflow_dispatch:
