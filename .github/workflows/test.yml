@@ -1,29 +1,34 @@
-name: test
+name: Zampto Auto Renew
 
 on:
-
   workflow_dispatch:
-  
+
 jobs:
-  renew_bot:
-    name: 执行续期脚本
+  renew:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav1/host2play1
+          repository: seav1/zampto
           token: ${{ secrets.REPO_PAT }}
           ref: main
-          fetch-depth: 0
-
+          
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          
       - uses: alphaxcv/warpx@1.0
-
-      - run: bash run.sh
+          
+      - run: bash test.sh
+        env:
+          LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL_ZAMPTO }}
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD_ZAMPTO }}
 
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-screenshots
-          retention-days: 1
-          path: output/screenshots/*.png
+          name: zampto-debug-logs
+          path: |
+            *.png
+            *.txt
+          retention-days: 3
