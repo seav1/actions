@@ -19,7 +19,7 @@ jobs:
           
       - uses: alphaxcv/warp@1.0
           
-      - run: bash run.sh
+      - run: bash test1.sh
         env:
           LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL_ZAMPTO }}
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD_ZAMPTO }}
