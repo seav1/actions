@@ -2,7 +2,7 @@ name: Pingless Renew
 
 on:
   schedule:
-    - cron: '16 19 * * *'
+    - cron: '50 * * * *'
   workflow_dispatch:
 
 jobs:
