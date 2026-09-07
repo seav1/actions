@@ -1,6 +1,8 @@
 name: FalixNodes Auto Restart
+
 on:
   workflow_dispatch:
+
 jobs:
   restart:
     runs-on: ubuntu-latest
@@ -10,13 +12,16 @@ jobs:
           repository: seav1/falixnodes
           token: ${{ secrets.REPO_PAT }}
           ref: main
-          
+
       - uses: alphaxcv/warp@1.0
-          
+        with:
+          stack: dual
+
       - run: bash run.sh
         env:
           FALIX_EMAIL: ${{ secrets.FALIX_EMAIL }}
           FALIX_PASSWORD: ${{ secrets.FALIX_PASSWORD }}
+
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
