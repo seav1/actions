@@ -2,7 +2,7 @@ name: FreeMCHosting Reward
 
 on:
   schedule:
-    - cron: '17 19 * * *'
+    - cron: '19 00 * * *'
   workflow_dispatch:
 
 jobs:
