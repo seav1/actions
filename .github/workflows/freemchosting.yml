@@ -1,0 +1,31 @@
+name: FreeMCHosting Reward
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reward:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/freemchosting
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - uses: alphaxcv/warp@1.0
+
+      - run: bash run.sh
+        env:
+          FREEMCHOSTING_EMAIL: ${{ secrets.FREEMCHOSTING_EMAIL }}
+          FREEMCHOSTING_PASSWORD: ${{ secrets.FREEMCHOSTING_PASSWORD }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-debug-files
+          path: |
+            *.png
+            *.log
+          if-no-files-found: ignore
