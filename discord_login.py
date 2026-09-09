@@ -15,6 +15,8 @@ if not EMAIL or not PASSWORD:
     sys.exit(1)
 
 def update_secret(token):
+    # 去除可能存在的换行符，防止破坏 HTTP 请求头
+    token = token.strip()
     print(f"🔄 更新 Secret: {SECRET_NAME}")
     env = os.environ.copy()
     if REPO_PAT:
@@ -33,7 +35,7 @@ def update_secret(token):
 
 def main():
     with SB(uc=True, headless=True, proxy=PROXY) as sb:
-        print("🌐 访问 Discord 登录页...")
+        print("🌐 访问 Discord 登录页（建立安全上下文）...")
         sb.uc_open_with_reconnect("https://discord.com/login", reconnect_time=4)
         sb.sleep(3)
 
@@ -53,15 +55,36 @@ def main():
         res = sb.execute_async_script(async_fetch)
         token = res.get("token")
 
-        if token:
-            print(f"✅ 成功获取 Token: {token[:4]}...{token[-4:]}")
-            if REPO_PAT:
-                update_secret(token)
-            else:
-                print("⚠️ 未配置 REPO_PAT，跳过 Secrets 写入")
-        else:
+        if not token:
             print(f"❌ 登录失败，API 返回: {res}")
             sb.save_screenshot("login_failed.png")
+            return
+
+        print(f"✅ 初步获取 Token: {token[:4]}...{token[-4:]}")
+
+        # ==========================================
+        # 核心修复：将 Token 注入浏览器并完成 Gateway 握手激活
+        # ==========================================
+        print("🔌 正在注入 Token 并进行 Gateway 握手激活 (模拟真实登录环境)...")
+        # 必须带双引号写入 localStorage，这是 Discord 前端识别的格式
+        sb.execute_script(f'window.localStorage.setItem("token", \'"{token}"\');')
+        
+        # 访问主页，迫使 Discord 官方 JS 加载并连接 WebSocket (wss://gateway.discord.gg)
+        sb.open("https://discord.com/app")
+        sb.sleep(8)  # 给予充足时间让官方客户端完成初始化和指纹上报
+
+        current_url = sb.get_current_url()
+        if "login" in current_url:
+            print("❌ Token 被风控拦截，激活失败（可能触发了环境异常或要求邮箱验证）")
+            sb.save_screenshot("token_rejected.png")
+            return
+        
+        print("🎉 Token 已被官方 Web 客户端验证并激活！具备完整 OAuth2 授权能力。")
+
+        if REPO_PAT:
+            update_secret(token)
+        else:
+            print("⚠️ 未配置 REPO_PAT，跳过 Secrets 写入")
 
 if __name__ == "__main__":
     main()
