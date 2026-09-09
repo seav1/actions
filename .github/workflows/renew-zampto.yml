@@ -21,7 +21,7 @@ jobs:
         id: proxy
         uses: alphaxcv/proxy_sb@1.0
         with:
-          node_link: ${{ secrets.NODE_LINK }}
+          node_link: ${{ secrets.VLESS_LINK_ALWAYSDATA }}
           
       - run: bash run.sh
         env:
