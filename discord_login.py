@@ -33,7 +33,7 @@ def update_secret(token):
 
 def main():
     with SB(uc=True, headless=True, proxy=PROXY) as sb:
-        print("🌐 访问 Discord 登录页（建立安全上下文）...")
+        print("🌐 访问 Discord 登录页...")
         sb.uc_open_with_reconnect("https://discord.com/login", reconnect_time=4)
         sb.sleep(3)
 
