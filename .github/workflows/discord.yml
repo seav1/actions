@@ -2,8 +2,8 @@ name: Discord Token Extractor
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '11 3 * * *'
+  # schedule:
+    # - cron: '11 3 * * *'
 
 jobs:
   run-login:
