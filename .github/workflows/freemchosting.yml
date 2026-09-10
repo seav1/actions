@@ -20,8 +20,7 @@ jobs:
 
       - run: bash run.sh
         env:
-          FREEMCHOSTING_EMAIL: ${{ secrets.FREEMCHOSTING_EMAIL }}
-          FREEMCHOSTING_PASSWORD: ${{ secrets.FREEMCHOSTING_PASSWORD }}
+          FREEMCHOSTING_ACCOUNTS: ${{ secrets.FREEMCHOSTING_ACCOUNTS }}
 
       - if: failure()
         uses: actions/upload-artifact@v4
