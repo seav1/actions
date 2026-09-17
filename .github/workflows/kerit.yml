@@ -12,7 +12,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: seav1/kerit
-          token: ${{ secrets.REPO_PAT }}
           ref: main
           
       - uses: alphaxcv/warp@1.0
