@@ -19,10 +19,9 @@ jobs:
           
       - run: bash run.sh
         env:
-          VLESS_URL: ${{ secrets.VLESS_URL }}
           KERIT_EMAIL: ${{ secrets.KERIT_EMAIL }}
-          GMAIL_TOKEN: ${{ secrets.GMAIL_TOKEN }}
-          PROXY: "socks5://127.0.0.1:10808"
+          KERIT_PASS: ${{ secrets.KERIT_PASS }}
+          REPO_PAT: ${{ secrets.REPO_PAT }}
 
       - if: failure()
         uses: actions/upload-artifact@v4
