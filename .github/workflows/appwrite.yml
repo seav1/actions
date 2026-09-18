@@ -1,0 +1,27 @@
+name: Appwrite Restore Paused Project
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: seav1/appwritex
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - run: bash run.sh
+        env:
+          APPWRITE_EMAIL: ${{ secrets.APPWRITE_EMAIL }}
+          APPWRITE_PASSWORD: ${{ secrets.APPWRITE_PASSWORD }}
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
+          if-no-files-found: ignore
