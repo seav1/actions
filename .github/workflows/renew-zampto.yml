@@ -22,7 +22,7 @@ jobs:
         uses: alphaxcv/proxy_sb@1.0
         with:
           node_link: ${{ secrets.VLESS_LINK }}
-          SINGBOX_VERSION: '1.14.0'
+          SINGBOX_VERSION: '1.13.21'
           
       - run: bash run.sh
         env:
