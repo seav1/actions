@@ -1,4 +1,4 @@
-name: Teoheberg Auto Earn
+name: technoheberg Auto Earn
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: seav1/teoheberg
+          repository: seav1/technoheberg
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
