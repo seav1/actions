@@ -23,7 +23,7 @@ jobs:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           REPO_PAT: ${{ secrets.REPO_PAT }}
           
-      - if: failure()
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: debug-files
