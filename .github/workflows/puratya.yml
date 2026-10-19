@@ -1,6 +1,8 @@
 name: puratya extend
 
 on:
+  schedule:
+    - cron: "17 3 * * *"
   workflow_dispatch:
 
 jobs:
