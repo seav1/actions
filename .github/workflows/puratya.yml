@@ -1,0 +1,49 @@
+name: puratya extend
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout private repo
+        uses: actions/checkout@v4
+        with:
+          repository: seav1/puratya
+          token: ${{ secrets.REPO_PAT }}
+          ref: main
+
+      - name: ⚙ 设置 Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: 🛠️ 安装系统依赖和 Python 依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils xdotool scrot fonts-noto-cjk jq wget
+          pip install seleniumbase requests
+          seleniumbase install chromedriver
+          
+      - name: Set up WARP
+        uses: alphaxcv/warp@1.0
+        continue-on-error: true
+
+      - name: Run
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: |
+          xvfb-run --auto-servernum python3 main.py
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-output
+          path: |
+            *.png
+            *.log
+          if-no-files-found: ignore
