@@ -21,7 +21,7 @@ jobs:
 
       - run: bash run.sh
         env:
-          LATVI_EMAIL: ${{ secrets.LATVI_EMAIL }}
+          LATVI_USERNAME: ${{ secrets.LATVI_USERNAME }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
           MAX_ADS: "20"
           MAX_FAILS: "3"
