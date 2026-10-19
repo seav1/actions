@@ -1,25 +1,44 @@
-name: Latvi Auto Earn
+name: Run
 
 on:
-  schedule:
-    - cron: '13 18 * * *'
   workflow_dispatch:
-  
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout private repo
+        uses: actions/checkout@v4
         with:
           repository: seav1/latvi
           token: ${{ secrets.REPO_PAT }}
           ref: main
 
-      - uses: alphaxcv/warp@1.0
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb libnss3 libgbm1 libasound2t64 libatk-bridge2.0-0 \
+            libgtk-3-0 libx11-xcb1 libxcomposite1 libxdamage1 \
+            libxrandr2 libcups2 fonts-liberation
+
+      - name: Install Python packages
+        run: |
+          pip install --upgrade pip
+          pip install seleniumbase requests packaging urllib3
+
+      - name: Set up WARP
+        uses: alphaxcv/warp@1.0
         continue-on-error: true
 
-      - run: bash run.sh
+      - name: Run
         env:
           LATVI_USERNAME: ${{ secrets.LATVI_USERNAME }}
           LATVI_PASSWORD: ${{ secrets.LATVI_PASSWORD }}
@@ -28,10 +47,14 @@ jobs:
           ROUND_COOL_MIN: "2"
           ROUND_COOL_MAX: "4"
           BYPASS_COOL: "90"
+        run: xvfb-run -a python main.py
 
-      - if: failure()
+      - name: Upload logs
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: runtime-output
-          path: "*.log"
+          path: |
+            *.png
+            *.log
           if-no-files-found: ignore
