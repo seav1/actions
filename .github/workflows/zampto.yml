@@ -28,7 +28,8 @@ jobs:
         env:
           LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL_ZAMPTO }}
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD_ZAMPTO }}
-
+          REPO_PAT: ${{ secrets.REPO_PAT }}
+          
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
