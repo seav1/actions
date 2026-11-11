@@ -30,7 +30,7 @@ jobs:
           LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD_ZAMPTO }}
           REPO_PAT: ${{ secrets.REPO_PAT }}
           
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: zampto-debug-logs
