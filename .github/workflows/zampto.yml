@@ -1,6 +1,8 @@
 name: Zampto Auto Renew
 
 on:
+  schedule:
+    - cron: "23 1 * * *"
   workflow_dispatch:
 
 jobs:
