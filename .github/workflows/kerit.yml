@@ -23,7 +23,7 @@ jobs:
           KERIT_PASS: ${{ secrets.KERIT_PASS }}
           REPO_PAT: ${{ secrets.REPO_PAT }}
 
-      - if: failure()
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kerit-debug-screenshots
