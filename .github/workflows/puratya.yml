@@ -26,13 +26,15 @@ jobs:
       - name: 🛠️ 安装依赖
         timeout-minutes: 8
         run: |
-          sudo apt-get update
+          # 只装缺的包；不先 update，失败再 update 重试一次；每次 apt 最多 3 分钟，防卡死
           need=""
           command -v xvfb-run >/dev/null || need="$need xvfb"
           command -v xdotool  >/dev/null || need="$need xdotool"
+          command -v scrot    >/dev/null || need="$need scrot"
+          command -v xdpyinfo >/dev/null || need="$need x11-utils"
           if [ -n "$need" ]; then
-            sudo apt-get install -y --no-install-recommends $need \
-              || { sudo apt-get update && sudo apt-get install -y --no-install-recommends $need; }
+            sudo timeout 180 apt-get install -y --no-install-recommends $need \
+              || { sudo timeout 180 apt-get update && sudo timeout 180 apt-get install -y --no-install-recommends $need; }
           fi
           pip install --disable-pip-version-check seleniumbase
 
@@ -46,7 +48,7 @@ jobs:
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
-          xvfb-run --auto-servernum python3 main.py
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python3 main.py
 
       - name: Upload logs
         if: always()
