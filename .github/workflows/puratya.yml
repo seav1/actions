@@ -41,7 +41,7 @@ jobs:
           xvfb-run --auto-servernum python3 main.py
 
       - name: Upload logs
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: runtime-output
