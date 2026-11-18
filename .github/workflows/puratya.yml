@@ -8,7 +8,7 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 20
 
     steps:
       - name: Checkout private repo
@@ -22,18 +22,27 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+          cache-dependency-path: requirements.txt
 
-      - name: 🛠️ 安装系统依赖和 Python 依赖
+      - name: 🛠️ 安装依赖
+        timeout-minutes: 8
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb x11-utils xdotool scrot fonts-noto-cjk jq wget
-          pip install seleniumbase requests
-          
+          need=""
+          command -v xvfb-run >/dev/null || need="$need xvfb"
+          command -v xdotool  >/dev/null || need="$need xdotool"
+          if [ -n "$need" ]; then
+            sudo apt-get install -y --no-install-recommends $need \
+              || { sudo apt-get update && sudo apt-get install -y --no-install-recommends $need; }
+          fi
+          pip install -r requirements.txt
+
       - name: Set up WARP
         uses: alphaxcv/warp@1.0
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: Run
+        timeout-minutes: 10
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
