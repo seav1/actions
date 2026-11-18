@@ -26,7 +26,7 @@ jobs:
       - name: 🛠️ 安装依赖
         timeout-minutes: 8
         run: |
-          # 只装缺的系统包，不先 apt-get update；失败再 update 重试一次
+          sudo apt-get update
           need=""
           command -v xvfb-run >/dev/null || need="$need xvfb"
           command -v xdotool  >/dev/null || need="$need xdotool"
