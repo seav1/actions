@@ -17,11 +17,7 @@ jobs:
           ref: main
 
 
-      - name: Setup proxy
-        id: proxy
-        uses: alphaxcv/proxy_sb@1.0
-        with:
-          node_link: ${{ secrets.VLESS_LINK }}
+      - uses: alphaxcv/warp@1.0
 
       - run: bash run.sh
         env:
