@@ -28,7 +28,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb x11-utils xdotool scrot fonts-noto-cjk jq wget
           pip install seleniumbase requests
-          seleniumbase install chromedriver
           
       - name: Set up WARP
         uses: alphaxcv/warp@1.0
