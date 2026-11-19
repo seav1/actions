@@ -28,7 +28,7 @@ jobs:
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
 
-      - if: failure()
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: runtime-output
