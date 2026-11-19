@@ -1,33 +1,363 @@
-name: technoheberg Auto Earn
+import inspect
+import os
+import re
+import sys
+import time
+import types
+import urllib.parse
+import warnings
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "17 13 * * *"
-  
-jobs:
-  run-bot:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: seav1/technoheberg
-          token: ${{ secrets.REPO_PAT }}
-          ref: main
+import requests
+
+if "pkg_resources" not in sys.modules:
+    from packaging.version import parse as _parse_version
+
+    _pkg = types.ModuleType("pkg_resources")
+    _pkg.parse_version = _parse_version
+    sys.modules["pkg_resources"] = _pkg
+
+from seleniumbase import SB
+
+warnings.filterwarnings("ignore")
+
+BASE = "https://dash.technoheberg.com"
+LOGIN_URL = BASE + "/login"
+EARN_URL = BASE + "/earn"
+
+MAX_ATTEMPTS = 3          # 浏览器整体重启次数
+MAX_TASK_FAILS = 5        # 连续失败多少次后放弃本轮
 
 
-      - uses: alphaxcv/warp@1.0
+class DriverDead(Exception):
+    """chromedriver / Chrome 已断开，需要重启浏览器"""
 
-      - run: bash run.sh
-        env:
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
 
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-output
-          path: |
-            *.png
-            *.log
-          if-no-files-found: ignore
+def sb_kwargs(proxy):
+    kwargs = {
+        "uc": True,
+        "headless": False,
+        "headless2": False,
+        "xvfb": True,
+        "incognito": False,
+        "guest_mode": False,
+        "locale_code": "en",
+    }
+
+    kwargs["chromium_arg"] = "--no-sandbox --disable-dev-shm-usage --start-maximized"
+
+    try:
+        params = inspect.signature(SB).parameters
+        if proxy and "proxy" in params:
+            kwargs["proxy"] = proxy
+        kwargs = {k: v for k, v in kwargs.items() if k in params}
+    except Exception:
+        if proxy:
+            kwargs["proxy"] = proxy
+
+    return kwargs
+
+
+def driver_alive(sb):
+    try:
+        sb.driver.title
+        return True
+    except Exception:
+        return False
+
+
+def ensure_alive(sb):
+    if not driver_alive(sb):
+        raise DriverDead("driver 已断开")
+
+
+def open_url(sb, url, reconnect=False):
+    """reconnect 只用于 Cloudflare 首屏（登录页），其余一律普通 open"""
+    if reconnect and hasattr(sb, "uc_open_with_reconnect"):
+        try:
+            sb.uc_open_with_reconnect(url, 6)
+            return
+        except Exception as e:
+            print(f"⚠️ reconnect 打开失败，改用普通 open: {e}", flush=True)
+            ensure_alive(sb)
+    sb.open(url)
+
+
+def click_text(sb, words):
+    el = sb.execute_script(
+        """
+        const words = arguments[0];
+        function vis(n){
+          const s = getComputedStyle(n), r = n.getBoundingClientRect();
+          return s.display !== "none" && s.visibility !== "hidden" && r.width > 0 && r.height > 0;
+        }
+        for (const n of document.querySelectorAll("a,button,[role='button']")) {
+          if (!vis(n)) continue;
+          const t = ((n.innerText || n.value || "") + "").trim().toLowerCase();
+          if (!t) continue;
+          if (words.some(w => t.includes(w))) { n.scrollIntoView({block: "center"}); return n; }
+        }
+        return null;
+        """,
+        [w.lower() for w in words],
+    )
+    if not el:
+        return False
+    sb.execute_script("arguments[0].click();", el)
+    return True
+
+
+def login(sb, discord_token, proxy_server=None):
+    print("🔑 启动 API 登录协议...", flush=True)
+    open_url(sb, LOGIN_URL, reconnect=True)
+    sb.sleep(2)
+
+    if "discord.com" not in sb.get_current_url():
+        if not click_text(sb, ["login with discord", "sign in with discord", "discord", "login"]):
+            if sb.is_element_visible('a[href*="discord"], a[data-testid="discord-login-btn"]'):
+                sb.click('a[href*="discord"], a[data-testid="discord-login-btn"]')
+        sb.sleep(3)
+
+    if len(sb.driver.window_handles) > 1:
+        sb.driver.switch_to.window(sb.driver.window_handles[-1])
+
+    current_url = sb.get_current_url()
+    unquoted_url = urllib.parse.unquote(current_url)
+
+    if "oauth2/authorize" not in unquoted_url:
+        raise Exception(f"❌ 未能跳转到 Discord 授权页面，当前 URL: {current_url}")
+
+    print("🔎 正在从重定向链接中抓取 OAuth 参数...", flush=True)
+
+    query_part = unquoted_url.split("oauth2/authorize?", 1)[-1]
+    params = urllib.parse.parse_qs(query_part)
+    flat_params = {k: v[0] for k, v in params.items()}
+    query_string = urllib.parse.urlencode(flat_params)
+
+    authorize_url = f"https://discord.com/api/v9/oauth2/authorize?{query_string}"
+
+    headers = {
+        "accept": "*/*",
+        "authorization": discord_token,
+        "content-type": "application/json",
+        "origin": "https://discord.com",
+        "referer": current_url,
+        "user-agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        ),
+    }
+
+    body = {
+        "permissions": "0",
+        "authorize": True,
+        "integration_type": 0,
+        "location_context": {
+            "guild_id": "10000",
+            "channel_id": "10000",
+            "channel_type": 10000,
+        },
+    }
+
+    proxies = {"http": proxy_server, "https": proxy_server} if proxy_server else None
+
+    print("⚡ 正在向 Discord 发送授权请求...", flush=True)
+    try:
+        resp = requests.post(authorize_url, headers=headers, json=body, proxies=proxies, timeout=20)
+        if resp.status_code != 200:
+            raise Exception(f"HTTP {resp.status_code} - {resp.text[:200]}")
+    except Exception as e:
+        raise Exception(f"❌ Discord OAuth2 请求失败: {e}")
+
+    location = resp.json().get("location", "")
+    if not location:
+        raise Exception(f"❌ 授权响应中未找到回调链接 location: {resp.json()}")
+
+    masked_loc = re.sub(r"code=[^&]+", "code=***", location)
+    print(f"✅ 成功获取回调链接: {masked_loc}", flush=True)
+
+    # 回调只是普通重定向，不用 reconnect
+    print("↩️ 正在携带授权码进入面板...", flush=True)
+    try:
+        sb.open(location)
+    except Exception as e:
+        print(f"⚠️ open 异常(继续检测): {e}", flush=True)
+    sb.sleep(3)
+
+    success = False
+    last_err = None
+    for _ in range(20):
+        try:
+            url = sb.get_current_url()
+            if BASE in url and "/login" not in url and "/callback" not in url:
+                success = True
+                break
+        except Exception as e:
+            last_err = e
+            print(f"⚠️ 读取 URL 失败: {e}", flush=True)
+            if not driver_alive(sb):
+                raise DriverDead(f"登录阶段 driver 断开: {e}")
+        sb.sleep(1)
+
+    if not success:
+        try:
+            stuck_url = sb.get_current_url()
+        except Exception:
+            stuck_url = "未知"
+        raise Exception(f"❌ 登录超时或被拦截，最后错误: {last_err}，当前 URL: {stuck_url}")
+
+    print(f"🎉 登录成功！当前 URL: {sb.get_current_url()}", flush=True)
+
+
+def turnstile_solved(sb):
+    try:
+        return bool(sb.execute_script("""
+            const input = document.querySelector('[name="cf-turnstile-response"]');
+            return input ? !!(input.value && input.value.length > 10) : true;
+        """))
+    except Exception:
+        return False
+
+
+def solve_turnstile(sb, task_index=0, timeout=45):
+    print("🛡️ 开始过 Turnstile...", flush=True)
+    end = time.time() + timeout
+
+    while time.time() < end:
+        ensure_alive(sb)
+        if turnstile_solved(sb):
+            print("🎉 无需验证 / Token 已获取", flush=True)
+            return True
+
+        if hasattr(sb, "uc_gui_click_captcha"):
+            try:
+                sb.uc_gui_click_captcha()
+            except Exception:
+                pass
+
+        sb.sleep(2)
+        if turnstile_solved(sb):
+            print("🎉 Token 获取成功！", flush=True)
+            return True
+
+        sb.sleep(1)
+
+    print("❌ Turnstile 超时", flush=True)
+    try:
+        sb.save_screenshot(f"turnstile_failed_{task_index}.png")
+    except Exception:
+        pass
+    return False
+
+
+def wait_timer_zero(sb, timeout=30):
+    for _ in range(timeout):
+        sb.sleep(1)
+        try:
+            if sb.get_text("#timerValue").strip() == "0":
+                return True
+        except Exception:
+            ensure_alive(sb)
+    return False
+
+
+def click_visit(sb):
+    """点击 Visit 并关闭弹出的广告标签页"""
+    main_window = sb.driver.window_handles[0]
+    sb.js_click("button.start-earn-btn:not([disabled])")
+    sb.sleep(2)
+
+    for handle in list(sb.driver.window_handles):
+        if handle != main_window:
+            try:
+                sb.driver.switch_to.window(handle)
+                sb.driver.close()
+            except Exception:
+                pass
+    sb.driver.switch_to.window(main_window)
+    print("🔒 已关闭广告标签页", flush=True)
+
+
+def process_earn_links(sb):
+    print("── 进入 Earn 页面 ──", flush=True)
+    sb.open(EARN_URL)
+    sb.sleep(4)
+
+    task_count = 0
+    fails = 0
+
+    while True:
+        ensure_alive(sb)
+
+        if not sb.is_element_visible("button.start-earn-btn:not([disabled])"):
+            print("🎉 所有任务已处理完毕！", flush=True)
+            break
+
+        if fails >= MAX_TASK_FAILS:
+            print(f"⚠️ 连续失败 {fails} 次，结束本轮", flush=True)
+            break
+
+        task_count += 1
+        print(f"\n▶️ 开始处理第 {task_count} 个任务...", flush=True)
+
+        print("👉 点击 Visit...", flush=True)
+        try:
+            click_visit(sb)
+        except Exception as e:
+            print(f"Visit 异常: {e}", flush=True)
+            ensure_alive(sb)
+            fails += 1
+            sb.open(EARN_URL)
+            sb.sleep(4)
+            continue
+
+        print("⏳ 等待倒计时...", flush=True)
+        if not wait_timer_zero(sb):
+            print("⚠️ 倒计时未归零", flush=True)
+            fails += 1
+            sb.open(EARN_URL)
+            sb.sleep(4)
+            continue
+
+        solve_turnstile(sb, task_count)
+
+        print("✅ 点击 Validate...", flush=True)
+        try:
+            sb.js_click("button.btn-success, button.btn-primary:not(.start-earn-btn)")
+        except Exception as e:
+            print(f"Validate 点击异常: {e}", flush=True)
+            ensure_alive(sb)
+
+        sb.sleep(5)
+        fails = 0
+        sb.open(EARN_URL)
+        sb.sleep(4)
+
+
+def main():
+    discord_token = os.getenv("DISCORD_TOKEN")
+    if not discord_token:
+        print("❌ 致命错误：缺少环境变量 DISCORD_TOKEN", flush=True)
+        sys.exit(1)
+
+    proxy = "socks5://127.0.0.1:1080"
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        print(f"🚀 启动 TechnoHeberg（第 {attempt}/{MAX_ATTEMPTS} 次, proxy={proxy}）...", flush=True)
+        try:
+            with SB(**sb_kwargs(proxy)) as sb:
+                sb.set_window_size(1920, 1080)
+                login(sb, discord_token, proxy_server=proxy)
+                process_earn_links(sb)
+            return
+        except DriverDead as e:
+            print(f"❌ 浏览器驱动断开，将重启: {e}", flush=True)
+        except Exception as e:
+            print(f"❌ 第 {attempt} 次运行失败: {e}", flush=True)
+        time.sleep(5)
+
+    print("❌ 已达到最大重试次数", flush=True)
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
