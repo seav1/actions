@@ -2,7 +2,7 @@ name: Pingless Auto Earn
 
 on:
   schedule:
-    - cron: '13 11 * * *'
+    - cron: '*/50 * * * *'
   workflow_dispatch:
 
 jobs:
