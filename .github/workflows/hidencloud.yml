@@ -19,7 +19,7 @@ jobs:
 
       - run: bash run.sh
         env:
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKENA }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           SERVICE_ID: ${{ secrets.HIDENCLOUD_SERVICE_ID }}
 
       - if: failure()
