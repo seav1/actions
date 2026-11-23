@@ -19,8 +19,7 @@ jobs:
 
       - run: bash run.sh
         env:
-          USERNAME: ${{ secrets.HIDENCLOUD_USERNAME }}
-          PASSWORD: ${{ secrets.HIDENCLOUD_PASSWORD }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKENA }}
           SERVICE_ID: ${{ secrets.HIDENCLOUD_SERVICE_ID }}
 
       - if: failure()
