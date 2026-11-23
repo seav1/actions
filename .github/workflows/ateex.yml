@@ -22,6 +22,7 @@ jobs:
       - run: bash run.sh
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          REPO_PAT: ${{ secrets.REPO_PAT }}
           MAX_ADS: "20"
           MAX_FAILS: "3"
           ROUND_COOL_MIN: "2"
